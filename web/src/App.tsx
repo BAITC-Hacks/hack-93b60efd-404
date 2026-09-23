@@ -7,6 +7,8 @@ import { Sidebar } from './components/Sidebar';
 import { Supervisor } from './components/Supervisor';
 import { TracePanel } from './components/TracePanel';
 import { VoiceOrb, type OrbState } from './components/VoiceOrb';
+import { CloudCanvas } from './components/CloudCanvas';
+import { PHONE_H, PHONE_W, StatusBar, usePhoneFrame } from './components/PhoneFrame';
 import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconRefresh, IconSliders } from './components/icons';
 import { LOW_CONFIDENCE, ms, pct } from './lib/format';
 import { uid, useConversations } from './state/useConversations';
@@ -196,10 +198,35 @@ export default function App() {
     return voice.supported ? 'Нажмите на шар и расскажите, что случилось' : 'Этот браузер не распознаёт речь. Откройте Chrome или напишите текстом';
   })();
 
-  const showTrace = traceOpen && view === 'chat';
+  const supervisorOpen = view === 'supervisor';
+  const showTrace = traceOpen && !supervisorOpen;
+  const panelWidth = showTrace ? 400 : supervisorOpen ? 640 : 0;
+  const frame = usePhoneFrame(panelWidth);
+  const phoneView = frame.framed ? 'chat' : view;
+  const phoneH = PHONE_H * frame.scale;
+
+  const supervisor = (
+    <Supervisor
+      conversations={store.conversations}
+      onClearAll={store.clearAll}
+      onOpen={(convId, msgId) => {
+        store.setActiveId(convId);
+        setSelectedId(msgId);
+        setTraceOpen(true);
+        setMode('chat');
+        setView('chat');
+      }}
+    />
+  );
 
   return (
-    <div className={`app ${showTrace ? 'with-trace' : ''}`}>
+    <div className={`shell ${frame.framed ? 'is-framed' : ''}`}>
+      {frame.framed && <CloudCanvas variant="sky" className="shell__sky" resolution={0.35} />}
+      <div className="shell__row">
+        <div className="phone-slot" style={frame.framed ? { width: PHONE_W * frame.scale, height: phoneH } : undefined}>
+          <div className="phone" style={frame.framed ? { transform: `scale(${frame.scale})` } : undefined}>
+            {frame.framed && <StatusBar />}
+    <div className="app">
       <Sidebar
         conversations={store.conversations}
         activeId={store.activeId}
@@ -215,7 +242,7 @@ export default function App() {
         }}
         onDelete={store.remove}
         onView={(v) => {
-          if (v === 'supervisor') endVoiceMode();
+          if (v === 'supervisor' && !frame.framed) endVoiceMode();
           setView(v);
           setDrawerOpen(false);
         }}
@@ -254,8 +281,8 @@ export default function App() {
           <button className="chip-btn round-sm" onClick={() => setDrawerOpen(true)} aria-label="Разговоры и настройки">
             <IconMenu width={18} height={18} />
           </button>
-          <button className="chip-btn title-pill" onClick={() => (view === 'supervisor' ? setView('chat') : setDrawerOpen(true))}>
-            {view === 'supervisor' ? 'Панель супервизора' : 'Voice Router'}
+          <button className="chip-btn title-pill" onClick={() => (phoneView === 'supervisor' ? setView('chat') : setDrawerOpen(true))}>
+            {phoneView === 'supervisor' ? 'Супервизор' : 'Voice Router'}
           </button>
           {!checking && !health && (
             <span className="demo-pill" title="Сервер маршрутизации недоступен. Ответы даёт заглушка по ключевым словам, качество маршрутизации по ней не оценивайте.">
@@ -267,10 +294,15 @@ export default function App() {
           )}
           {health && <span className="live-pill">{health.model ?? 'сервер'}</span>}
           <div className="topbar__spacer" />
-          {view === 'chat' && (
+          {phoneView === 'chat' && (
             <button
-              className={`chip-btn round-sm ${traceOpen ? 'is-on' : ''}`}
-              onClick={() => setTraceOpen((v) => !v)}
+              className={`chip-btn round-sm ${showTrace ? 'is-on' : ''}`}
+              onClick={() => {
+                if (supervisorOpen) {
+                  setView('chat');
+                  setTraceOpen(true);
+                } else setTraceOpen((v) => !v);
+              }}
               aria-pressed={traceOpen}
               aria-label="Трассировка"
               title="Трассировка: сценарий, обоснование, задержки"
@@ -280,20 +312,8 @@ export default function App() {
           )}
         </header>
 
-        {view === 'supervisor' ? (
-          <div className="scroll">
-            <Supervisor
-              conversations={store.conversations}
-              onClearAll={store.clearAll}
-              onOpen={(convId, msgId) => {
-                store.setActiveId(convId);
-                setSelectedId(msgId);
-                setTraceOpen(true);
-                setMode('chat');
-                setView('chat');
-              }}
-            />
-          </div>
+        {phoneView === 'supervisor' ? (
+          <div className="scroll">{supervisor}</div>
         ) : mode === 'voice' ? (
           <div className="stage">
             <div className="stage__center">
@@ -338,7 +358,7 @@ export default function App() {
           </div>
         )}
 
-        {view === 'chat' && voice.error && (
+        {phoneView === 'chat' && voice.error && (
           <div className="toast" role="alert">
             <IconAlert width={16} height={16} />
             <span>{voice.error}</span>
@@ -348,7 +368,7 @@ export default function App() {
           </div>
         )}
 
-        {view === 'chat' && (
+        {phoneView === 'chat' && (
           <Composer
             mode={mode}
             busy={busy}
@@ -370,13 +390,28 @@ export default function App() {
           />
         )}
       </main>
+    </div>
+          </div>
+        </div>
 
-      {showTrace && (
-        <>
-          <div className="trace-scrim" onClick={() => setTraceOpen(false)} aria-hidden />
-          <TracePanel message={selected} userMessage={selectedUser} turnNo={turnNo} onClose={() => setTraceOpen(false)} onReview={onReview} />
-        </>
-      )}
+        {showTrace && (
+          <>
+            {!frame.framed && <div className="trace-scrim" onClick={() => setTraceOpen(false)} aria-hidden />}
+            <div className="side" style={frame.framed ? { height: phoneH } : undefined}>
+              <TracePanel message={selected} userMessage={selectedUser} turnNo={turnNo} onClose={() => setTraceOpen(false)} onReview={onReview} />
+            </div>
+          </>
+        )}
+
+        {frame.framed && supervisorOpen && (
+          <div className="side side--wide" style={{ height: phoneH }}>
+            <button className="iconbtn side__close" onClick={() => setView('chat')} aria-label="Закрыть панель супервизора">
+              <IconClose />
+            </button>
+            <div className="side__scroll">{supervisor}</div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }
