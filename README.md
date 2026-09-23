@@ -1,5 +1,7 @@
 # Saqta Voice
 
+> **Test the deployed app first:** [Open Saqta Voice](https://hackalem-137-74-166-29.sslip.io/). No local setup is needed—the frontend and API are already hosted. Guest login: `hackalem` / `SaqtaVoice-404-7E2M-9Q6P-2026`.
+
 ### Voice support that follows the conversation.
 
 A customer rarely speaks in neat menu options. They explain a problem in their own words, remember a second question halfway through, or switch from Russian to Kazakh. Saqta Voice is a web-based insurance assistant built for that conversation: it listens, chooses a service scenario, responds aloud, and shows a supervisor why it made that choice.
@@ -14,16 +16,9 @@ Traditional voice menus make the customer translate a real problem into one of a
 
 Saqta Voice moves the decision from a fixed phrase classifier to a language-model routing layer. The assistant can handle natural speech while a supervisor sees the selected scenario, other possibilities, the reason, and how long each stage took. The important result is not just a pleasant voice; it is a better decision about what the customer needs.
 
-## Try the hosted app
+## Try the main flow
 
-**[Open Saqta Voice](https://hackalem-137-74-166-29.sslip.io/)**
-
-This is a temporary, shared hackathon login for reviewers of this private repository. It is **not** an OpenAI or Gemini API key.
-
-```text
-Username: hackalem
-Password: SaqtaVoice-404-7E2M-9Q6P-2026
-```
+Use the temporary guest login above; it is not an OpenAI or Gemini API key.
 
 Allow microphone access and speak in Russian or Kazakh. Text input is available as a secondary path. A useful first request is: “Я оплатил полис, но он не активен. Что мне делать?” Then ask a follow-up or change topic. Open **Как обработан запрос** to see the transcript, chosen scenario, explanation, alternatives, and stage timings. The sidebar includes a supervisor view for reviewing routing decisions.
 
