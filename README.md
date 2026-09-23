@@ -4,7 +4,7 @@ HackAlem AI, Halyk Bank track, case 2. A contact-centre voice robot whose conver
 
 ## What's built
 
-A web interface in [`web/`](web/), modelled on ChatGPT's voice mode and styled for Halyk Bank: the Halyk logo, their green palette and the Manrope typeface. On a desktop the app is shown inside a phone mockup over a live cloud sky; the trace and supervisor panels open as glass cards next to the phone. On a real phone the app is full screen. The clouds in the sky and inside the orb are drawn by our own WebGL shader (`web/src/components/CloudCanvas.tsx`), with no images or video.
+A web interface in [`frontend/`](frontend/), modelled on ChatGPT's voice mode and styled for Halyk Bank: the Halyk logo, their green palette and the Manrope typeface. On a desktop the app is shown inside a phone mockup over a live cloud sky; the trace and supervisor panels open as glass cards next to the phone. On a real phone the app is full screen. The clouds in the sky and inside the orb are drawn by our own WebGL shader (`frontend/src/components/CloudCanvas.tsx`), with no images or video.
 
 - **Main screen: an orb in the centre.** Tap it and the robot listens. The orb reacts to the loudness of your voice, speeds up while the robot picks a scenario and pulses while it answers. After each answer the robot listens again, so the conversation needs no buttons. The mic button at the bottom mutes, and the X ends voice mode and shows the transcript.
 - **"Спросите робота" field at the bottom.** Text is the backup channel. The "+" button opens sample phrases in Russian, Kazakh and mixed Russian–Kazakh speech.
@@ -31,20 +31,20 @@ For irreversible actions (`action: "confirm"`) the robot shows "Confirm / Cancel
 Requires Node.js 20+.
 
 ```bash
-cd web
+cd frontend
 npm install
 npm run dev
 ```
 
 Open http://localhost:5173. The microphone works in Chrome and Edge. For Safari and Firefox, enable server-side recognition (see `stt` in `/api/health`).
 
-The dev server proxies `/api` to `http://localhost:8000`. To use another address, set `API_PROXY_TARGET` in `web/.env` (see `web/.env.example`).
+The dev server proxies `/api` to `http://localhost:8000`. To use another address, set `API_PROXY_TARGET` in `frontend/.env` (see `frontend/.env.example`).
 
 If the backend is unreachable, the interface switches to demo mode:
 - a yellow "Демо" badge appears at the top;
 - replies are prefixed with `[демо]`.
 
-Demo replies come from a keyword stub (`web/src/api/mock.ts`) that exists only to exercise the UI. Don't judge routing quality by it.
+Demo replies come from a keyword stub (`frontend/src/api/mock.ts`) that exists only to exercise the UI. Don't judge routing quality by it.
 
 ## API the frontend expects
 
@@ -115,7 +115,7 @@ User-facing strings (`reply_text`, scenario `name`, `reasoning`, `why_not`) are 
 - **End of utterance to voice** runs from the moment the client stops speaking (or presses Send) to the first sound of the reply. It is measured in the browser. Target: 1.5 s.
 - **The bar under each reply** splits the time into recognition, scenario selection, reply generation, network and synthesis. The black tick on the bar marks 1.5 s.
 
-## `web/` layout
+## `frontend/` layout
 
 ```
 src/
