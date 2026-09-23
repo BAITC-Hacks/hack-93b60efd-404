@@ -103,12 +103,6 @@ h1, h2, h3 { margin: 0; }
 }
 .statusbar__icons { display: inline-flex; align-items: center; gap: 6px; }
 
-@property --trace {
-  syntax: '<number>';
-  inherits: false;
-  initial-value: 1;
-}
-
 .side {
   --side-w: 400px;
   position: relative; flex-shrink: 0; width: var(--side-w); min-height: 0;
@@ -120,27 +114,11 @@ h1, h2, h3 { margin: 0; }
 }
 .side--wide { --side-w: min(640px, calc(100vw - 64px - 32px - 214px)); }
 .side.is-closing { animation: side-out .22s cubic-bezier(.4, 0, .8, .4) forwards; pointer-events: none; }
+/* the negative margin cancels the panel's width and the row gap, so the phone glides instead of jumping */
 @keyframes side-in { from { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
 @keyframes side-out { to { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
-
-.is-framed .phone-slot {
-  --phone-w: 390px;
-  --phone-scale: 1;
-  transition: width .48s cubic-bezier(.32, .72, 0, 1), height .48s cubic-bezier(.32, .72, 0, 1);
-}
-.is-framed .phone { z-index: 2; transition: transform .48s cubic-bezier(.32, .72, 0, 1); }
-.is-framed .side {
-  --trace: 1;
-  position: absolute; top: 0; z-index: 1; height: 100%;
-  left: calc(var(--phone-w) - var(--side-w) + var(--trace) * (var(--side-w) + 32px));
-  clip-path: inset(0 0 0 max(0px, calc(var(--side-w) - var(--trace) * (var(--side-w) + 32px) + 8px)) round calc(62px * var(--phone-scale, 1)));
-  box-shadow: none;
-  border-radius: calc(62px * var(--phone-scale, 1));
-  animation: trace-in .48s cubic-bezier(.32, .72, 0, 1);
-}
-.is-framed .side.is-closing { animation: trace-out .36s cubic-bezier(.4, 0, .2, 1) forwards; }
-@keyframes trace-in { from { --trace: 0; } }
-@keyframes trace-out { to { --trace: 0; } }
+.is-framed .phone-slot { transition: width .32s cubic-bezier(.3, .7, .2, 1), height .32s cubic-bezier(.3, .7, .2, 1); }
+.is-framed .phone { transition: transform .32s cubic-bezier(.3, .7, .2, 1); }
 .side__scroll { overflow-y: auto; flex: 1; min-height: 0; }
 .side__close { position: absolute; top: 14px; right: 14px; z-index: 2; }
 .is-framed .side .trace { background: transparent; border-left: 0; flex: 1; }

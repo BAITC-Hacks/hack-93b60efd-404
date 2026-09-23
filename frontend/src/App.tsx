@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { fetchHealth, sendTurn, type Source } from './api/client';
 import type { Health, InputChannel, LangHint } from './api/types';
 import { EXAMPLES, EmptyState, MessageList } from './components/Chat';
@@ -198,16 +198,14 @@ export default function App() {
     traceWasShown.current = showTrace;
     if (!was || showTrace || supervisorOpen) return setTraceLeaving(false);
     setTraceLeaving(true);
-    const t = setTimeout(() => setTraceLeaving(false), 360);
+    const t = setTimeout(() => setTraceLeaving(false), 220);
     return () => clearTimeout(t);
   }, [showTrace, supervisorOpen]);
   const traceMounted = showTrace || traceLeaving;
   const panelWidth = traceMounted ? 400 : supervisorOpen ? 640 : 0;
   const frame = usePhoneFrame(panelWidth);
   const phoneView = frame.framed ? 'chat' : view;
-  const phoneW = PHONE_W * frame.scale;
   const phoneH = PHONE_H * frame.scale;
-  const slotW = phoneW + (panelWidth ? 32 + panelWidth : 0);
 
   const supervisor = (
     <Supervisor
@@ -228,19 +226,7 @@ export default function App() {
       {frame.framed && <CloudCanvas variant="sky" className="shell__sky" resolution={0.35} />}
       {frame.framed && <HalykLogo height={34} className="shell__brand" />}
       <div className="shell__row">
-        <div
-          className="phone-slot"
-          style={
-            frame.framed
-              ? ({
-                  width: slotW,
-                  height: phoneH,
-                  '--phone-w': `${phoneW}px`,
-                  '--phone-scale': String(frame.scale),
-                } as CSSProperties)
-              : undefined
-          }
-        >
+        <div className="phone-slot" style={frame.framed ? { width: PHONE_W * frame.scale, height: phoneH } : undefined}>
           <div className="phone" style={frame.framed ? { transform: `scale(${frame.scale})` } : undefined}>
           <div className="phone__screen">
             {frame.framed && <StatusBar />}
@@ -411,33 +397,12 @@ export default function App() {
     </div>
           </div>
           </div>
-
-        {frame.framed && traceMounted && (
-          <div className={`side ${showTrace ? '' : 'is-closing'}`}>
-            <TracePanel
-              messages={messages}
-              selectedId={selected?.id ?? null}
-              onSelect={setSelectedId}
-              onClose={() => setTraceOpen(false)}
-              onReview={onReview}
-            />
-          </div>
-        )}
-
-        {frame.framed && supervisorOpen && (
-          <div className="side side--wide">
-            <button className="iconbtn side__close" onClick={() => setView('chat')} aria-label="Закрыть панель супервизора">
-              <IconClose />
-            </button>
-            <div className="side__scroll">{supervisor}</div>
-          </div>
-        )}
         </div>
 
-        {!frame.framed && traceMounted && (
+        {traceMounted && (
           <>
-            <div className={`trace-scrim ${showTrace ? '' : 'is-closing'}`} onClick={() => setTraceOpen(false)} aria-hidden />
-            <div className={`side ${showTrace ? '' : 'is-closing'}`}>
+            {!frame.framed && <div className={`trace-scrim ${showTrace ? '' : 'is-closing'}`} onClick={() => setTraceOpen(false)} aria-hidden />}
+            <div className={`side ${showTrace ? '' : 'is-closing'}`} style={frame.framed ? { height: phoneH } : undefined}>
               <TracePanel
                 messages={messages}
                 selectedId={selected?.id ?? null}
@@ -447,6 +412,15 @@ export default function App() {
               />
             </div>
           </>
+        )}
+
+        {frame.framed && supervisorOpen && (
+          <div className="side side--wide" style={{ height: phoneH }}>
+            <button className="iconbtn side__close" onClick={() => setView('chat')} aria-label="Закрыть панель супервизора">
+              <IconClose />
+            </button>
+            <div className="side__scroll">{supervisor}</div>
+          </div>
         )}
       </div>
     </div>
