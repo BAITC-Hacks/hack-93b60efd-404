@@ -97,6 +97,6 @@ The routing layer reads a scenario catalog instead of hard-coded test phrases. A
 ## Sources and third-party components
 
 - [HackAlem Case 2 technical specification](https://docs.google.com/document/d/1e-F3ahQwPSdRMugpLO1vQ0_gFf5q9hIATUt0GxC3bEM/edit), [official starter kit](https://drive.google.com/file/d/1sHE56gXnzdscHz5lMcNbwd1VsJIVLFUv/view), and [regulations](https://edu.astanahub.com/hackathons/df4743f5-c492-415c-b45a-1f13adb78e06?tab=regulations)
-- React, Vite, Google Gen AI SDK, OpenAI Python SDK, and Pydantic are third-party components. `frontend/package-lock.json` and `uv.lock` record the local dependency resolution; hosted Python packages are built from the ranges in `pyproject.toml`. Model use is governed by each provider's service terms.
+- React and Vite (MIT), Google Gen AI SDK and OpenAI Python SDK (Apache-2.0), and Pydantic (MIT) are third-party components. These license identifiers were checked against the installed package metadata. `frontend/package-lock.json` and `uv.lock` record the local dependency resolution; hosted Python packages are built from the ranges in `pyproject.toml`. Model use is governed by each provider's service terms.
 
 Team 404 built the contest-specific routing, dialogue, actions, API, and web experience in the official repository. Organizer data and third-party components are identified above rather than presented as team-created assets.
