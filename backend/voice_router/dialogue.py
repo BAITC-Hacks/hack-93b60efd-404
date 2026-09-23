@@ -99,7 +99,7 @@ class DialogueService:
         extraction = None
         action_trace: list[dict[str, Any]] = []
         if first_id.startswith("SYS_"):
-            answer = self._system_answer(first_id, response_language, decision.alternatives)
+            answer = self._system_answer(first_id, response_language, result.clarification_question)
             if first_id == "SYS_GOODBYE":
                 state.active_scenario = None
                 state.active_completed = False
@@ -727,16 +727,12 @@ class DialogueService:
                           "rejected_slots": [],
                           "actions": action_trace}}
 
-    def _system_answer(self, route_id: str, language: str, alternatives: list[str]) -> str:
+    def _system_answer(self, route_id: str, language: str, clarification_question: str | None) -> str:
         intent = self.catalog.require_route(route_id)
         if route_id != "SYS_UNCLEAR":
             return intent["response"][language]
-        plausible = [self.catalog.require_route(sid) for sid in alternatives[:2]]
-        if len(plausible) == 2:
-            return intent["response"][language].format(
-                option_a=plausible[0]["name"],
-                option_b=plausible[1]["name"],
-            )
+        if clarification_question:
+            return clarification_question
         return (
             "Уточните, пожалуйста, что вы хотите сделать со страховкой?"
             if language == "ru"

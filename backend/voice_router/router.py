@@ -47,6 +47,9 @@ class AmbiguityReview(BaseModel):
         description="One proposed alternative if a single operation is clear; otherwise null"
     )
     reason: str
+    clarification_question: str = Field(
+        description="If the operation remains ambiguous, ask one natural customer-facing question in their language. No scenario names or IDs; empty string when a scenario is clear."
+    )
 
 
 @dataclass(frozen=True)
@@ -57,6 +60,7 @@ class RouteResult:
     input_tokens: int
     output_tokens: int
     ambiguity_reviewed: bool = False
+    clarification_question: str | None = None
 
 
 class OpenAIRouter:
@@ -161,6 +165,7 @@ class OpenAIRouter:
         input_tokens = usage.input_tokens if usage else 0
         output_tokens = usage.output_tokens if usage else 0
         ambiguity_reviewed = False
+        clarification_question = None
         if decision.scenario_ids == ["SYS_UNCLEAR"] and decision.alternatives:
             candidates = [
                 {
@@ -187,12 +192,18 @@ class OpenAIRouter:
                             "or other required slots are NOT ambiguity; collect them later. "
                             "If the operation itself is unclear or multiple candidates "
                             "genuinely fit, return null. Do not favor a candidate merely "
-                            "because it is the only alternative. Never invent facts."
+                            "because it is the only alternative. Never invent facts. "
+                            "When no single operation is clear, write one short question "
+                            "that distinguishes the plausible customer situations in the "
+                            "customer's language. Never speak catalogue names, IDs, or English "
+                            "internal labels to the customer. When one scenario is clear, "
+                            "return an empty clarification_question."
                         )},
                         {"role": "user", "content": json.dumps({
                             "customer_utterance": transcript,
                             "recent_history": (history or [])[-6:],
                             "tentative_reason": decision.reason,
+                            "customer_language": decision.language,
                             "proposed_candidates": candidates,
                         }, ensure_ascii=False)},
                     ],
@@ -211,6 +222,8 @@ class OpenAIRouter:
                         if item != review.clear_scenario_id
                     ]
                     decision.reason = review.reason
+                else:
+                    clarification_question = review.clarification_question.strip() or None
                 if second.usage:
                     input_tokens += second.usage.input_tokens
                     output_tokens += second.usage.output_tokens
@@ -222,6 +235,7 @@ class OpenAIRouter:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             ambiguity_reviewed=ambiguity_reviewed,
+            clarification_question=clarification_question,
         )
 
     def interpret_confirmation(
