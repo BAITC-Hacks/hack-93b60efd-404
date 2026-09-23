@@ -1,7 +1,5 @@
 # Voice Router — team 404
 
-[Русская версия](README.ru.md)
-
 HackAlem AI, Halyk Bank track, case 2. A contact-centre voice robot whose conversation scenario is chosen by an LLM that takes the dialogue context into account, not by an intent classifier. After every turn a supervisor sees the chosen scenario, the reasoning behind it, the alternatives and the latency of each stage.
 
 ## What's built
@@ -12,8 +10,8 @@ A web interface in [`web/`](web/), modelled on ChatGPT's voice mode and styled f
 - **"Спросите робота" field at the bottom.** Text is the backup channel. The "+" button opens sample phrases in Russian, Kazakh and mixed Russian–Kazakh speech.
 - **Menu (top left).** Opens conversation history, the supervisor panel and settings: speech language, reading replies aloud in chat, and where speech is recognised.
 - **Chat mode.** Shows the conversation: the client speaks or types, and the robot answers by voice and text.
-- **Trace panel.** Shows:
-  - transcript and detected language;
+- **Trace panel.** A feed of the whole conversation: each client phrase, the robot's reply and its routing chip. Clicking a chip expands that turn to show:
+  - detected language and client tone;
   - scenario with confidence, reasoning and alternatives;
   - extracted parameters and postponed topics;
   - per-stage latency against the 500 ms and 1.5 s targets;
