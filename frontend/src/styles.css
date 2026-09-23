@@ -77,9 +77,9 @@ h1, h2, h3 { margin: 0; }
 .is-framed .phone {
   width: 390px; height: 844px; transform-origin: top left;
   padding: 11px; border-radius: 62px;
-  background: rgb(255 255 255 / .45);
+  background: rgb(7 18 34 / .55);
   -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
-  box-shadow: 0 40px 90px -40px rgb(0 90 66 / .35);
+  box-shadow: inset 0 0 0 1px rgb(255 255 255 / .14), 0 40px 90px -40px rgb(0 40 30 / .55);
 }
 /* position: fixed drawers must stay inside the screen, not cover the bezel */
 .is-framed .phone__screen { border-radius: 51px; contain: layout paint; }
