@@ -9,7 +9,7 @@ import { TracePanel } from './components/TracePanel';
 import { VoiceOrb, type OrbState } from './components/VoiceOrb';
 import { CloudCanvas } from './components/CloudCanvas';
 import { PHONE_H, PHONE_W, StatusBar, usePhoneFrame } from './components/PhoneFrame';
-import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconRefresh, IconSliders, HalykLogo, HalykMark } from './components/icons';
+import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconSliders, HalykLogo, HalykMark } from './components/icons';
 import { LOW_CONFIDENCE, ms, pct } from './lib/format';
 import { uid, useConversations } from './state/useConversations';
 import type { ClientTimings, Review } from './state/types';
@@ -35,7 +35,6 @@ export default function App() {
   const [traceOpen, setTraceOpen] = useState(() => window.innerWidth >= 1100 && window.innerHeight >= 620);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
-  const [checking, setChecking] = useState(true);
   const [langHint, setLangHint] = useState<LangHint>('auto');
   const [voiceOut, setVoiceOut] = useState(true);
   const [engine, setEngine] = useState<SttEngine>('browser');
@@ -43,17 +42,12 @@ export default function App() {
 
   const source: Source = health ? 'backend' : 'mock';
 
-  const checkHealth = useCallback(async () => {
-    setChecking(true);
-    const h = await fetchHealth();
-    setHealth(h);
-    if (h?.stt) setEngine('server');
-    setChecking(false);
-  }, []);
-
   useEffect(() => {
-    void checkHealth();
-  }, [checkHealth]);
+    void fetchHealth().then((h) => {
+      setHealth(h);
+      if (h?.stt) setEngine('server');
+    });
+  }, []);
 
   useEffect(() => onSpeakingChange(setSpeaking), []);
 
@@ -284,14 +278,6 @@ export default function App() {
             <HalykMark size={18} className="brand-logo" />
             {phoneView === 'supervisor' ? 'Супервизор' : 'Voice Router'}
           </button>
-          {!checking && !health && (
-            <span className="demo-pill" title="Сервер маршрутизации недоступен. Ответы даёт заглушка по ключевым словам, качество маршрутизации по ней не оценивайте.">
-              Демо<span className="demo-pill__long"> без сервера</span>
-              <button onClick={checkHealth} aria-label="Проверить сервер снова">
-                <IconRefresh width={13} height={13} />
-              </button>
-            </span>
-          )}
           {health && <span className="live-pill">{health.model ?? 'сервер'}</span>}
           <div className="topbar__spacer" />
           {phoneView === 'chat' && (

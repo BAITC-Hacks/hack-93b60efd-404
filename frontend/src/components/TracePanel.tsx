@@ -153,6 +153,9 @@ function TurnDetails({ m, onReview }: { m: Message; onReview: (r: Review | undef
           )}
         </div>
         {low && <p className="note note--warn">Робот не уверен в выборе, поэтому переспрашивает клиента, а не угадывает.</p>}
+        {m.source === 'mock' && (
+          <p className="note">Сервер недоступен, ответ дала заглушка по ключевым словам. Качество маршрутизации по ней не оценивайте.</p>
+        )}
       </section>
 
       <section className="tsec">

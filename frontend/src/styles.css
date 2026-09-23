@@ -131,12 +131,10 @@ h1, h2, h3 { margin: 0; }
 .round-sm { width: 40px; }
 .title-pill { gap: 7px; padding: 0 16px 0 12px; font-weight: 700; font-size: var(--fs-md); letter-spacing: -0.01em; white-space: nowrap; }
 .brand-logo { color: var(--brand); flex-shrink: 0; }
-.demo-pill, .live-pill {
+.live-pill {
   display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px;
   border-radius: 999px; font-size: var(--fs-xs); white-space: nowrap;
 }
-.demo-pill { background: var(--warn-soft); color: var(--warn); cursor: help; box-shadow: inset 0 0 0 1px rgb(251 174 23 / .45); }
-.demo-pill button { display: grid; place-items: center; color: inherit; }
 .live-pill { background: var(--accent-soft); color: var(--accent-ink); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); }
 
 /* ---------- voice stage + orb ---------- */
@@ -542,7 +540,6 @@ h1, h2, h3 { margin: 0; }
   .sup__head h1 { font-size: 22px; }
   .card { padding: 14px; }
   .topbar { padding-left: 12px; padding-right: 12px; }
-  .demo-pill__long { display: none; }
   .dock { padding-left: 12px; padding-right: 12px; }
   .round { width: 44px; height: 44px; }
   .pill-input { min-height: 44px; }
