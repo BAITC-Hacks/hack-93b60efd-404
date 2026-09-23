@@ -51,8 +51,8 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
       <button className="sheet-grip" onClick={onClose} tabIndex={-1} aria-hidden />
       <header className="trace__head">
         <div>
-          <div className="trace__eyebrow">Трассировка</div>
-          <div className="trace__title">{turns.length ? plural(done, 'реплика', 'реплики', 'реплик') : 'Нет данных'}</div>
+          <div className="trace__title">Трассировка</div>
+          {turns.length > 0 && <div className="trace__eyebrow">{plural(done, 'реплика', 'реплики', 'реплик')}</div>}
         </div>
         <button className="iconbtn" onClick={onClose} aria-label="Скрыть трассировку">
           <IconClose />
@@ -61,7 +61,7 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
 
       {!turns.length ? (
         <p className="trace__empty">
-          После каждой реплики здесь видно, какой сценарий выбрал робот, почему, какие были альтернативы и сколько времени занял каждый этап.
+          Скажите роботу первую фразу. Здесь появится сценарий, который он выбрал, почему он так решил и сколько занял каждый этап.
         </p>
       ) : (
         <div className="trace__body tfeed" ref={bodyRef}>
@@ -182,7 +182,7 @@ function TurnDetails({ m, onReview }: { m: Message; onReview: (r: Review | undef
         <section className="tsec">
           <h3>Контекст и параметры</h3>
           {Object.keys(t.params).length > 0 && (
-            <div className="kv">
+            <div className="kv kv--params">
               {Object.entries(t.params).map(([k, v]) => (
                 <FragmentKV key={k} k={k} v={v == null ? '—' : String(v)} />
               ))}
@@ -207,7 +207,7 @@ function TurnDetails({ m, onReview }: { m: Message; onReview: (r: Review | undef
         <LatencyBar message={m} />
         <div className="targets">
           <Target label="Выбор сценария" value={t.timings.route_ms} target={ROUTE_TARGET_MS} />
-          <Target label="Конец реплики → голос" value={m.client?.e2e_ms} target={E2E_TARGET_MS} />
+          <Target label="От конца фразы до голоса" value={m.client?.e2e_ms} target={E2E_TARGET_MS} />
         </div>
       </section>
 
@@ -224,7 +224,7 @@ function TurnDetails({ m, onReview }: { m: Message; onReview: (r: Review | undef
             className={`btn ${m.review?.verdict === 'wrong' ? 'btn--bad' : ''}`}
             onClick={() => onReview(m.review?.verdict === 'wrong' ? undefined : { verdict: 'wrong', correct_scenario: correct || undefined })}
           >
-            <IconClose width={16} height={16} /> Ошибка
+            <IconClose width={16} height={16} /> Сценарий неверный
           </button>
         </div>
         {m.review?.verdict === 'wrong' && (

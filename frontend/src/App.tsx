@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fetchHealth, sendTurn, type Source } from './api/client';
 import type { Health, InputChannel, LangHint } from './api/types';
-import { EmptyState, MessageList } from './components/Chat';
+import { EXAMPLES, EmptyState, MessageList } from './components/Chat';
 import { Composer } from './components/Composer';
 import { Sidebar } from './components/Sidebar';
 import { Supervisor } from './components/Supervisor';
@@ -189,7 +189,7 @@ export default function App() {
     if (orbState === 'listening') return voice.interim || 'Слушаю…';
     if (voice.state === 'processing') return 'Распознаю речь…';
     if (busy) return 'Выбираю сценарий…';
-    if (speaking) return lastBot?.text.replace(/^\[демо\]\s*/, '') ?? '';
+    if (speaking) return lastBot?.text ?? '';
     if (session && muted) return 'Микрофон выключен';
     if (session) return '';
     return voice.supported ? 'Нажмите на шар и расскажите, что случилось' : 'Этот браузер не распознаёт речь. Откройте Chrome или напишите текстом';
@@ -320,8 +320,20 @@ export default function App() {
               <VoiceOrb state={orbState} levelRef={voice.levelRef} onClick={onOrbClick} label={session ? 'Закончить фразу' : 'Начать разговор'} />
               <div className="stage__caption" aria-live="polite">
                 {orbState === 'speaking' && lastUser && <span className="stage__heard">«{lastUser.text}»</span>}
-                <span className={orbState === 'listening' && voice.interim ? 'is-live' : ''}>{caption}</span>
+                <span key={orbState === 'listening' ? 'listening' : caption} className={orbState === 'listening' && voice.interim ? 'is-live' : ''}>
+                  {caption}
+                </span>
               </div>
+              {!session && !lastBot && !busy && (
+                <div className="hints">
+                  {EXAMPLES.filter((e) => e.short).map((e) => (
+                    <button key={e.text} className="hint" onClick={() => void handleTurn(e.text, 'text')}>
+                      <span className="hint__lang">{e.lang}</span>
+                      {e.short}
+                    </button>
+                  ))}
+                </div>
+              )}
               {lastBot?.turn && !busy && (
                 <button
                   className="route-pill"

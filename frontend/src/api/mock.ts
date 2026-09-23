@@ -211,7 +211,7 @@ export async function mockTurn(req: TurnRequest): Promise<TurnResponse> {
     : { id: 'clarify', name: 'Уточнение запроса', confidence: confidence! };
 
   return {
-    reply_text: `[демо] ${reply}`,
+    reply_text: reply,
     lang,
     scenario,
     reasoning: reasoning!,

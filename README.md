@@ -40,9 +40,7 @@ Open http://localhost:5173. The microphone works in Chrome and Edge. For Safari 
 
 The dev server proxies `/api` to `http://localhost:8000`. To use another address, set `API_PROXY_TARGET` in `frontend/.env` (see `frontend/.env.example`).
 
-If the backend is unreachable, the interface switches to demo mode:
-- a yellow "Демо" badge appears at the top;
-- replies are prefixed with `[демо]`.
+If the backend is unreachable, the interface switches to demo mode and shows a yellow "Демо" badge at the top.
 
 Demo replies come from a keyword stub (`frontend/src/api/mock.ts`) that exists only to exercise the UI. Don't judge routing quality by it.
 
