@@ -2,11 +2,11 @@
 
 Case 2 of HackAlem AI: a Russian/Kazakh voice assistant for the fictional Saqta Insurance scenario catalogue. The challenge is context-aware routing across 40 scenarios when the customer changes topic, combines requests, or switches language. A supervisor must be able to inspect each decision and its timing.
 
-**Status: planning. No runnable application, measured result, or deployment exists in this repository yet.** This README will be updated from verified implementation before submission; proposed behavior is not presented as delivered behavior.
+**Status: partial backend implementation.** The text router works against the official catalogue, but there is no complete dialogue/voice application or deployment yet. This README is not submission-ready.
 
 ## Implemented capabilities
 
-None yet. See the [Russian functional specification and backend implementation plan](docs/VOICE_ROUTER_PLAN_RU.md) and [experiment protocol](docs/experiments/README.md).
+The official 40-scenario kit is present without content changes. The backend validates scenario/action/slot references and uses the OpenAI Responses API for a structured, catalogue-backed text routing decision. A real `gpt-6-luna` run routed 17/17 selected development utterances correctly; this is a **small selected slice, not full-set or hidden-set accuracy**. See the [Russian functional specification and backend implementation plan](docs/VOICE_ROUTER_PLAN_RU.md) and [experiment record](docs/experiments/2026-09-23-luna-sol-routing.md).
 
 ## Main flow
 
@@ -18,7 +18,7 @@ Not finalized. Nikita and Altinay jointly own backend work: dialogue state, rout
 
 ## Requirements, install, and run
 
-No verified install or run command exists yet. The real OpenAI path will require a server-side `OPENAI_API_KEY`; `TYPESAFE_API_KEY` will be needed only if the optional Jev experiment runs. Neither key belongs in Git or browser code. This section must contain a tested one-command start, exact prerequisites, and a judge-accessible verification path before submission. **This README is not submission-ready.**
+For the current text-router slice: install `uv` and run `uv sync` from the repository root with Python 3.12. Set a valid server-side `OPENAI_API_KEY` in the process environment, then run `uv run python -m voice_router.evaluate_router --model gpt-6-luna --limit 1 --output artifacts/luna-one.json`. This exact route was exercised against the real OpenAI service and official input. `TYPESAFE_API_KEY` will be needed only if the optional Jev experiment runs. Neither key belongs in Git or browser code. A one-command startup and judge-accessible voice verification path do **not** exist yet.
 
 ## Reproduce the evaluation
 
