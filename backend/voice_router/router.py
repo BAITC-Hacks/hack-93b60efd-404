@@ -42,6 +42,13 @@ class HandoffDecision(BaseModel):
     reason: str
 
 
+class AmbiguityReview(BaseModel):
+    clear_scenario_id: str | None = Field(
+        description="One proposed alternative if a single operation is clear; otherwise null"
+    )
+    reason: str
+
+
 @dataclass(frozen=True)
 class RouteResult:
     decision: RouteDecision
@@ -49,6 +56,7 @@ class RouteResult:
     router_ms: float
     input_tokens: int
     output_tokens: int
+    ambiguity_reviewed: bool = False
 
 
 class OpenAIRouter:
@@ -106,6 +114,11 @@ class OpenAIRouter:
             "history, active_scenario, and pending_scenarios without dropping a new topic. "
             "Missing identifiers or slots do not make a clear intent ambiguous: "
             "choose the scenario, then collect its required data downstream. "
+            "The caller is already speaking to Saqta: a recognizable requested "
+            "operation does not need an explicit insurance-product noun to be "
+            "routable. Use SYS_UNCLEAR only when the operation itself is unclear "
+            "or genuinely fits competing scenarios, not because its product or "
+            "contract details have not yet been provided. "
             "Do not create a second intent when a product feature, price factor, "
             "or contract term is merely part of the first request; add another "
             "scenario only for a genuinely independent customer task. "
@@ -130,7 +143,6 @@ class OpenAIRouter:
             text_format=RouteDecision,
             max_output_tokens=500,
         )
-        router_ms = (time.perf_counter() - started) * 1000
         decision = response.output_parsed
         if decision is None:
             raise RuntimeError("OpenAI did not return a parsed route decision")
@@ -146,12 +158,70 @@ class OpenAIRouter:
             raise ValueError("Alternatives must differ from selected routes")
 
         usage = response.usage
+        input_tokens = usage.input_tokens if usage else 0
+        output_tokens = usage.output_tokens if usage else 0
+        ambiguity_reviewed = False
+        if decision.scenario_ids == ["SYS_UNCLEAR"] and decision.alternatives:
+            candidates = [
+                {
+                    "id": route_id,
+                    "name": item["name"],
+                    "description": item["description"],
+                    "boundaries": item["not_this_if"],
+                    "required_slots": item["slots"]["required"],
+                }
+                for route_id in decision.alternatives
+                if (item := self.catalog.require_route(route_id)).get("scenario_id")
+            ]
+            if candidates:
+                ambiguity_reviewed = True
+                second = self.client.responses.parse(
+                    model=self.model,
+                    reasoning={"effort": "none"},
+                    input=[
+                        {"role": "system", "content": (
+                            "Audit a tentative unclear route for a fictional insurer. "
+                            "Choose exactly one supplied candidate only when the customer's "
+                            "requested OPERATION is clear from meaning and catalogue boundaries. "
+                            "Missing product, client identity, claim number, policy number, "
+                            "or other required slots are NOT ambiguity; collect them later. "
+                            "If the operation itself is unclear or multiple candidates "
+                            "genuinely fit, return null. Do not favor a candidate merely "
+                            "because it is the only alternative. Never invent facts."
+                        )},
+                        {"role": "user", "content": json.dumps({
+                            "customer_utterance": transcript,
+                            "recent_history": (history or [])[-6:],
+                            "tentative_reason": decision.reason,
+                            "proposed_candidates": candidates,
+                        }, ensure_ascii=False)},
+                    ],
+                    text_format=AmbiguityReview,
+                    max_output_tokens=130,
+                )
+                review = second.output_parsed
+                if review is None:
+                    raise RuntimeError("OpenAI did not return an ambiguity review")
+                if review.clear_scenario_id is not None:
+                    if review.clear_scenario_id not in decision.alternatives:
+                        raise ValueError("Ambiguity reviewer selected an unproposed route")
+                    decision.scenario_ids = [review.clear_scenario_id]
+                    decision.alternatives = [
+                        item for item in decision.alternatives
+                        if item != review.clear_scenario_id
+                    ]
+                    decision.reason = review.reason
+                if second.usage:
+                    input_tokens += second.usage.input_tokens
+                    output_tokens += second.usage.output_tokens
+        router_ms = (time.perf_counter() - started) * 1000
         return RouteResult(
             decision=decision,
             model=self.model,
             router_ms=router_ms,
-            input_tokens=usage.input_tokens if usage else 0,
-            output_tokens=usage.output_tokens if usage else 0,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            ambiguity_reviewed=ambiguity_reviewed,
         )
 
     def interpret_confirmation(

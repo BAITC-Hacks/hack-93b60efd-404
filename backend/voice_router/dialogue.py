@@ -219,6 +219,7 @@ class DialogueService:
                 "reason": decision.reason,
                 "is_continuation": decision.is_continuation,
                 "model": result.model,
+                "ambiguity_reviewed": result.ambiguity_reviewed,
                 "router_ms": round(result.router_ms, 1),
                 "extractor_ms": round(extraction.extractor_ms, 1) if extraction else None,
                 "response_ms": round(state.response_ms, 1),

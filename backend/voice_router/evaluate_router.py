@@ -54,6 +54,7 @@ def main() -> None:
             "input_tokens": result.input_tokens,
             "output_tokens": result.output_tokens,
             "model": result.model,
+            "ambiguity_reviewed": result.ambiguity_reviewed,
         }
         records.append(record)
         args.output.write_text(
