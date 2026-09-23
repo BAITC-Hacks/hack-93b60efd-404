@@ -1,7 +1,7 @@
 # Saqta Voice
 
 > [!IMPORTANT]
-> **ATTENTION: Test the live demo first.** The app and API are already deployed; no local setup is needed.
+> **You can see how Saqta Voice works in the live demo below.** The app and API are already deployed; no local setup is needed.
 >
 > **Open the demo:** [Saqta Voice](https://hackalem-137-74-166-29.sslip.io/)
 >
