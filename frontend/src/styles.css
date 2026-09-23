@@ -105,20 +105,35 @@ h1, h2, h3 { margin: 0; }
 
 .side {
   --side-w: 400px;
+  --phone-w: 390px;
   position: relative; flex-shrink: 0; width: var(--side-w); min-height: 0;
-  animation: side-in .32s cubic-bezier(.3, .7, .2, 1);
+  animation: side-in .48s cubic-bezier(.32, .72, 0, 1);
   display: flex; flex-direction: column;
   border-radius: 32px; overflow: hidden;
   background: var(--bg);
   box-shadow: 0 40px 90px -40px rgb(0 60 44 / .45);
 }
 .side--wide { --side-w: min(640px, calc(100vw - 64px - 32px - 214px)); }
-.side.is-closing { animation: side-out .22s cubic-bezier(.4, 0, .8, .4) forwards; pointer-events: none; }
-/* the negative margin cancels the panel's width and the row gap, so the phone glides instead of jumping */
-@keyframes side-in { from { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
-@keyframes side-out { to { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
-.is-framed .phone-slot { transition: width .32s cubic-bezier(.3, .7, .2, 1), height .32s cubic-bezier(.3, .7, .2, 1); }
-.is-framed .phone { transition: transform .32s cubic-bezier(.3, .7, .2, 1); }
+.side.is-closing { animation: side-out .34s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
+/* tuck the panel fully behind the phone, then let it slide out as the row opens */
+@keyframes side-in {
+  from {
+    margin-left: calc(-1 * var(--side-w) - 32px);
+    transform: translateX(calc(var(--phone-w) - var(--side-w)));
+  }
+}
+@keyframes side-out {
+  to {
+    margin-left: calc(-1 * var(--side-w) - 32px);
+    transform: translateX(calc(var(--phone-w) - var(--side-w)));
+  }
+}
+.is-framed .phone-slot {
+  z-index: 2;
+  transition: width .48s cubic-bezier(.32, .72, 0, 1), height .48s cubic-bezier(.32, .72, 0, 1);
+}
+.is-framed .phone { transition: transform .48s cubic-bezier(.32, .72, 0, 1); }
+.is-framed .side { z-index: 1; }
 .side__scroll { overflow-y: auto; flex: 1; min-height: 0; }
 .side__close { position: absolute; top: 14px; right: 14px; z-index: 2; }
 .is-framed .side .trace { background: transparent; border-left: 0; flex: 1; }

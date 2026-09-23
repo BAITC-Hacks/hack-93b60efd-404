@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { fetchHealth, sendTurn, type Source } from './api/client';
 import type { Health, InputChannel, LangHint } from './api/types';
 import { EXAMPLES, EmptyState, MessageList } from './components/Chat';
@@ -198,7 +198,7 @@ export default function App() {
     traceWasShown.current = showTrace;
     if (!was || showTrace || supervisorOpen) return setTraceLeaving(false);
     setTraceLeaving(true);
-    const t = setTimeout(() => setTraceLeaving(false), 220);
+    const t = setTimeout(() => setTraceLeaving(false), 340);
     return () => clearTimeout(t);
   }, [showTrace, supervisorOpen]);
   const traceMounted = showTrace || traceLeaving;
@@ -402,7 +402,10 @@ export default function App() {
         {traceMounted && (
           <>
             {!frame.framed && <div className={`trace-scrim ${showTrace ? '' : 'is-closing'}`} onClick={() => setTraceOpen(false)} aria-hidden />}
-            <div className={`side ${showTrace ? '' : 'is-closing'}`} style={frame.framed ? { height: phoneH } : undefined}>
+            <div
+              className={`side ${showTrace ? '' : 'is-closing'}`}
+              style={frame.framed ? ({ height: phoneH, '--phone-w': `${PHONE_W * frame.scale}px` } as CSSProperties) : undefined}
+            >
               <TracePanel
                 messages={messages}
                 selectedId={selected?.id ?? null}
@@ -415,7 +418,7 @@ export default function App() {
         )}
 
         {frame.framed && supervisorOpen && (
-          <div className="side side--wide" style={{ height: phoneH }}>
+          <div className="side side--wide" style={{ height: phoneH, '--phone-w': `${PHONE_W * frame.scale}px` } as CSSProperties}>
             <button className="iconbtn side__close" onClick={() => setView('chat')} aria-label="Закрыть панель супервизора">
               <IconClose />
             </button>
