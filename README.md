@@ -68,6 +68,18 @@ The backend owns scenario selection and business facts; Gemini speaks the return
 
 The [HTTP contract](docs/BACKEND_API.md) describes the API. The [Russian functional plan](docs/VOICE_ROUTER_PLAN_RU.md) explains decision boundaries. Source code lives in [`backend/voice_router`](backend/voice_router) and [`frontend`](frontend); the organizer's starter kit is preserved in [`data/voice_router_dataset`](data/voice_router_dataset).
 
+## Reviewer map
+
+This map points to evidence for the [official evaluation criteria](https://docs.google.com/document/d/1e-F3ahQwPSdRMugpLO1vQ0_gFf5q9hIATUt0GxC3bEM/edit); the weights are the rubric, not a self-awarded score.
+
+| Criterion | Where to verify it |
+| --- | --- |
+| Working solution · 25 | [Hosted app](https://hackalem-137-74-166-29.sslip.io/), [40 official scenarios](data/voice_router_dataset/scenarios.json), and [voice interaction](frontend/src/voice/useGeminiLive.ts) |
+| Technical implementation · 25 | [LLM routing](backend/voice_router/router.py), [dialogue and confirmations](backend/voice_router/dialogue.py), [case actions](backend/voice_router/actions.py), and [human-readable trace](frontend/src/components/TracePanel.tsx) |
+| README and reproducibility · 25 | Guest access above, [one-command local launch](scripts/run-local.sh), [HTTP contract](docs/BACKEND_API.md), and [deployment files](deploy/compose.yml) |
+| Value and applicability · 15 | The customer problem and supervisor workflow above; answers use the organizer's synthetic [knowledge base](data/voice_router_dataset/knowledge_base.json) |
+| Potential and originality · 10 | Multi-intent context, ambiguity review, RU/KZ speech, and the measured [routing](docs/experiments/2026-09-23-luna-sol-routing.md) and [real-voice](docs/experiments/2026-09-23-real-voice.md) results |
+
 ## What has been checked
 
 The official development set contains 104 labeled utterances. The selected router returned the exact ordered route for **104/104** in the recorded development run. That set informed development, so this is **not** an estimate of accuracy on the jury's hidden ten utterances. A separate [real-voice check](docs/experiments/2026-09-23-real-voice.md) routed **11/11 scorable recordings** from two team members as expected. The [Luna/Sol comparison](docs/experiments/2026-09-23-luna-sol-routing.md) records the model choice and measured latency.
