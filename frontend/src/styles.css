@@ -139,7 +139,7 @@ h1, h2, h3 { margin: 0; }
   --lvl: 0;
   position: relative; overflow: hidden; isolation: isolate;
   width: clamp(150px, 50cqi, 230px); aspect-ratio: 1; border-radius: 50%;
-  transform: scale(calc(1 + var(--lvl) * 0.08));
+  transform: scale(calc(1 + var(--lvl) * 0.14));
   box-shadow: 0 30px 70px -30px rgb(0 128 95 / .55);
   -webkit-mask-image: -webkit-radial-gradient(white, black);
   transition: filter .3s, opacity .3s, box-shadow .3s;

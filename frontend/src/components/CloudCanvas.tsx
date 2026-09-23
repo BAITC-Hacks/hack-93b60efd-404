@@ -142,7 +142,7 @@ export function CloudCanvas({ variant, className, intensityRef, resolution = 1 }
       const dt = Math.min(0.1, (now - last) / 1000);
       last = now;
       const lvl = Math.max(0, Math.min(1, intensityRef?.current ?? 0));
-      time += dt * (1 + lvl * 3);
+      time += dt * (1 + lvl * 4);
       if (!document.hidden) {
         gl.uniform2f(uRes, canvas.width, canvas.height);
         gl.uniform1f(uTime, time);
