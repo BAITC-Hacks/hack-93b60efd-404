@@ -1,25 +1,36 @@
-# Voice Router — команда 404
+# Voice Router — team 404
 
-HackAlem AI, трек Halyk Bank, кейс 2. Голосовой робот контакт-центра, у которого сценарий разговора выбирает LLM с учётом контекста диалога, а не intent-классификатор. Супервизор после каждой реплики видит выбранный сценарий, обоснование, альтернативы и задержку по этапам.
+[Русская версия](README.ru.md)
 
-## Что уже есть
+HackAlem AI, Halyk Bank track, case 2. A contact-centre voice robot whose conversation scenario is chosen by an LLM that takes the dialogue context into account, not by an intent classifier. After every turn a supervisor sees the chosen scenario, the reasoning behind it, the alternatives and the latency of each stage.
 
-Веб-интерфейс в папке [`web/`](web/), устроенный как голосовой режим ChatGPT. На компьютере приложение показано в рамке телефона на фоне живого неба, трассировка и панель супервизора открываются стеклянными панелями рядом с телефоном. На телефоне интерфейс занимает весь экран. Облака неба и шара рисует собственный WebGL-шейдер (`web/src/components/CloudCanvas.tsx`), без картинок и видео.
+## What's built
 
-- главный экран — шар в центре. Нажали на него — робот слушает; шар реагирует на громкость голоса, крутится, пока робот выбирает сценарий, и пульсирует, пока отвечает. После ответа робот снова слушает, разговор идёт без кнопок. Кнопка микрофона внизу выключает звук, крестик завершает голосовой режим и показывает переписку;
-- внизу поле «Спросите робота»: текст как резервный канал, а «+» открывает примеры реплик на русском, казахском и со смешанной речью;
-- кнопка меню слева вверху открывает историю разговоров, панель супервизора и настройки (язык речи, озвучка в чате, где распознавать речь);
-- в режиме чата видна переписка: клиент говорит или пишет, робот отвечает голосом и текстом;
-- справа панель трассировки: транскрипт, язык, сценарий с уверенностью, обоснование, альтернативы, извлечённые параметры, отложенные темы, задержка по этапам с ориентирами 500 мс и 1,5 с, оценка супервизора «верно / ошибка»;
-- панель супервизора: точность по оценкам, медиана и p95 выбора сценария, доля быстрого пути, уточнения, передачи оператору, список реплик, где робот сомневался или ошибся.
+A web interface in [`web/`](web/), modelled on ChatGPT's voice mode and styled for Halyk Bank: the Halyk logo, their green palette and the Manrope typeface. On a desktop the app is shown inside a phone mockup over a live cloud sky; the trace and supervisor panels open as glass cards next to the phone. On a real phone the app is full screen. The clouds in the sky and inside the orb are drawn by our own WebGL shader (`web/src/components/CloudCanvas.tsx`), with no images or video.
 
-Под каждым ответом робота есть плашка: путь (быстрый или LLM), сценарий, уверенность, язык и полоса задержки. Нажатие на плашку открывает трассировку этой реплики.
+- **Main screen: an orb in the centre.** Tap it and the robot listens. The orb reacts to the loudness of your voice, speeds up while the robot picks a scenario and pulses while it answers. After each answer the robot listens again, so the conversation needs no buttons. The mic button at the bottom mutes, and the X ends voice mode and shows the transcript.
+- **"Спросите робота" field at the bottom.** Text is the backup channel. The "+" button opens sample phrases in Russian, Kazakh and mixed Russian–Kazakh speech.
+- **Menu (top left).** Opens conversation history, the supervisor panel and settings: speech language, reading replies aloud in chat, and where speech is recognised.
+- **Chat mode.** Shows the conversation: the client speaks or types, and the robot answers by voice and text.
+- **Trace panel.** Shows:
+  - transcript and detected language;
+  - scenario with confidence, reasoning and alternatives;
+  - extracted parameters and postponed topics;
+  - per-stage latency against the 500 ms and 1.5 s targets;
+  - the supervisor's "correct / wrong" verdict.
+- **Supervisor panel.** Shows:
+  - accuracy based on reviews;
+  - median and p95 scenario-selection time;
+  - fast-path share, clarifications and operator handoffs;
+  - a list of turns where the robot was unsure or wrong.
 
-Если действие необратимое (`action: "confirm"`), робот показывает кнопки «Подтвердить / Отменить» и ничего не выполняет до ответа клиента. При `action: "handoff"` показывается карточка передачи оператору с кратким контекстом.
+Every robot reply carries a chip with the path (fast or LLM), scenario, confidence, language and a latency bar. Clicking the chip opens the trace for that turn.
 
-## Запуск фронтенда
+For irreversible actions (`action: "confirm"`) the robot shows "Confirm / Cancel" buttons and does nothing until the client answers. For `action: "handoff"` it shows an operator handoff card with a short summary of the context.
 
-Нужен Node.js 20+.
+## Running the frontend
+
+Requires Node.js 20+.
 
 ```bash
 cd web
@@ -27,13 +38,17 @@ npm install
 npm run dev
 ```
 
-Откройте http://localhost:5173. Микрофон работает в Chrome и Edge; для Safari и Firefox включите серверное распознавание (см. `stt` в `/api/health`).
+Open http://localhost:5173. The microphone works in Chrome and Edge. For Safari and Firefox, enable server-side recognition (see `stt` in `/api/health`).
 
-Dev-сервер проксирует `/api` на `http://localhost:8000`. Другой адрес задаётся в `web/.env` через `API_PROXY_TARGET` (пример в `web/.env.example`).
+The dev server proxies `/api` to `http://localhost:8000`. To use another address, set `API_PROXY_TARGET` in `web/.env` (see `web/.env.example`).
 
-Если бэкенд недоступен, интерфейс переходит в демо-режим: вверху жёлтая плашка, ответы помечены `[демо]`. Их даёт заглушка по ключевым словам (`web/src/api/mock.ts`), она нужна только чтобы проверить интерфейс. Маршрутизацию по ней не оценивать.
+If the backend is unreachable, the interface switches to demo mode:
+- a yellow "Демо" badge appears at the top;
+- replies are prefixed with `[демо]`.
 
-## API, которого ждёт фронтенд
+Demo replies come from a keyword stub (`web/src/api/mock.ts`) that exists only to exercise the UI. Don't judge routing quality by it.
+
+## API the frontend expects
 
 ### `GET /api/health`
 
@@ -41,15 +56,15 @@ Dev-сервер проксирует `/api` на `http://localhost:8000`. Др�
 { "ok": true, "model": "gpt-4.1-mini", "stt": true, "tts": true, "scenarios": 40 }
 ```
 
-`stt: true` включает серверное распознавание: фронт записывает реплику, сам определяет конец речи по тишине и отправляет аудио на `/api/stt`.
+`stt: true` turns on server-side recognition. The frontend records the utterance, detects the end of speech by silence and sends the audio to `/api/stt`.
 
 ### `POST /api/turn`
 
-Запрос:
+Request:
 
 ```json
 {
-  "session_id": "uuid разговора",
+  "session_id": "conversation uuid",
   "text": "я вчера оплатил, деньги списались, а заказ не подтвердился… и адрес поменять надо",
   "input": "voice",
   "lang_hint": "auto",
@@ -59,7 +74,7 @@ Dev-сервер проксирует `/api` на `http://localhost:8000`. Др�
 }
 ```
 
-Ответ:
+Response:
 
 ```json
 {
@@ -81,33 +96,40 @@ Dev-сервер проксирует `/api` на `http://localhost:8000`. Др�
 }
 ```
 
-- `lang`: `ru`, `kk` или `mixed`.
-- `route_path`: `fast` (быстрый путь для очевидных реплик) или `llm`.
-- `action`: `answer`, `clarify` (переспросить вместо догадки), `confirm` (необратимое действие, ждём подтверждения), `handoff` (передать оператору).
-- Если `audio_b64` пустой, фронт озвучивает `reply_text` браузерным синтезом.
+User-facing strings (`reply_text`, scenario `name`, `reasoning`, `why_not`) are in the client's language, so the examples are in Russian.
 
-### `POST /api/stt` (необязательно)
+- `lang`: `ru`, `kk` or `mixed`.
+- `route_path`: `fast` (a shortcut for obvious phrases) or `llm`.
+- `action`:
+  - `answer`;
+  - `clarify` — ask again instead of guessing;
+  - `confirm` — irreversible action, wait for the client's confirmation;
+  - `handoff` — transfer to an operator.
+- If `audio_b64` is empty, the frontend speaks `reply_text` with browser speech synthesis.
 
-`multipart/form-data` с полями `audio` (webm/opus) и `lang_hint` (`ru` или `kk`). Ответ: `{ "text": "...", "lang": "mixed", "stt_ms": 240 }`.
+### `POST /api/stt` (optional)
 
-## Как считается задержка
+`multipart/form-data` with the fields `audio` (webm/opus) and `lang_hint` (`ru` or `kk`). Response: `{ "text": "...", "lang": "mixed", "stt_ms": 240 }`.
 
-- «Выбор сценария» — `timings.route_ms` с сервера, ориентир 500 мс.
-- «Конец реплики → голос» — от момента, когда клиент замолчал (или нажал «Отправить»), до первого звука ответа. Меряется в браузере, ориентир 1,5 с.
-- Полоса под ответом раскладывает время на распознавание, выбор сценария, генерацию ответа, сеть и синтез. Чёрная метка на полосе — 1,5 с.
+## How latency is measured
 
-## Структура `web/`
+- **Scenario selection** is `timings.route_ms` from the server. Target: 500 ms.
+- **End of utterance to voice** runs from the moment the client stops speaking (or presses Send) to the first sound of the reply. It is measured in the browser. Target: 1.5 s.
+- **The bar under each reply** splits the time into recognition, scenario selection, reply generation, network and synthesis. The black tick on the bar marks 1.5 s.
+
+## `web/` layout
 
 ```
 src/
-  api/          контракт (types.ts), клиент, демо-заглушка
-  voice/        распознавание (браузер или сервер, детектор тишины), синтез
-  state/        разговоры в localStorage
-  components/   сайдбар, чат, поле ввода, трассировка, панель супервизора
+  api/          contract (types.ts), client, demo stub
+  voice/        speech recognition (browser or server, silence detector), synthesis
+  state/        conversations in localStorage
+  components/   sidebar, chat, composer, trace, supervisor panel, phone frame, cloud shader, icons
 ```
 
-## Границы
+## Limitations
 
-- История и оценки супервизора хранятся в localStorage браузера, общей базы пока нет.
-- Браузерное распознавание принимает один язык за раз (RU или KZ). Для смешанной речи нужно серверное распознавание.
-- Данные синтетические, реальные записи разговоров не используются.
+- Conversation history and supervisor reviews live in the browser's localStorage; there is no shared database yet.
+- Browser speech recognition accepts one language at a time (RU or KZ). Mixed speech needs server-side recognition.
+- All data is synthetic; no real call recordings are used.
+- The Halyk Bank logo and colours are used for the hackathon demo only.
