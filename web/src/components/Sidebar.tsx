@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import type { Conversation } from '../state/types';
 import { relTime } from '../lib/format';
-import { IconChart, IconChat, IconPlus, IconTrash, Logo } from './icons';
+import { IconChart, IconChat, IconPlus, IconTrash, HalykLogo } from './icons';
 
 interface Props {
   conversations: Conversation[];
@@ -30,7 +30,7 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
       <div className={`scrim ${open ? 'is-open' : ''}`} onClick={onClose} aria-hidden />
       <aside className={`sidebar ${open ? 'is-open' : ''}`} aria-label="Разговоры">
         <div className="sidebar__brand">
-          <Logo />
+          <HalykLogo height={30} className="brand-logo" />
           <div>
             <div className="sidebar__title">Voice Router</div>
             <div className="sidebar__sub">Контакт-центр · страхование</div>

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import type { Message } from '../state/types';
 import { ACTION_LABEL, LANG_SHORT, LOW_CONFIDENCE, pct } from '../lib/format';
 import { LatencyBar } from './LatencyBar';
-import { IconAlert, IconBolt, IconBranch, IconHeadset, IconMic, Logo } from './icons';
+import { IconAlert, IconBolt, IconBranch, IconHeadset, IconMic, HalykMark } from './icons';
 
 export const EXAMPLES = [
   { lang: 'RU', text: 'Здравствуйте, я вчера оплатил полис, деньги списались, а он не активировался… а, и ещё, адрес доставки поменять надо' },
@@ -86,7 +86,7 @@ function AssistantMessage({
   return (
     <div className={`msg msg--bot ${selected ? 'is-selected' : ''}`}>
       <div className="msg__avatar">
-        <Logo />
+        <HalykMark size={18} />
       </div>
       <div className="msg__body">
         {m.pending && (

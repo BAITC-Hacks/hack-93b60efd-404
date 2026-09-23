@@ -9,7 +9,7 @@ import { TracePanel } from './components/TracePanel';
 import { VoiceOrb, type OrbState } from './components/VoiceOrb';
 import { CloudCanvas } from './components/CloudCanvas';
 import { PHONE_H, PHONE_W, StatusBar, usePhoneFrame } from './components/PhoneFrame';
-import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconRefresh, IconSliders } from './components/icons';
+import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconRefresh, IconSliders, HalykLogo, HalykMark } from './components/icons';
 import { LOW_CONFIDENCE, ms, pct } from './lib/format';
 import { uid, useConversations } from './state/useConversations';
 import type { ClientTimings, Review } from './state/types';
@@ -222,6 +222,7 @@ export default function App() {
   return (
     <div className={`shell ${frame.framed ? 'is-framed' : ''}`}>
       {frame.framed && <CloudCanvas variant="sky" className="shell__sky" resolution={0.35} />}
+      {frame.framed && <HalykLogo height={34} className="shell__brand" />}
       <div className="shell__row">
         <div className="phone-slot" style={frame.framed ? { width: PHONE_W * frame.scale, height: phoneH } : undefined}>
           <div className="phone" style={frame.framed ? { transform: `scale(${frame.scale})` } : undefined}>
@@ -283,6 +284,7 @@ export default function App() {
             <IconMenu width={18} height={18} />
           </button>
           <button className="chip-btn title-pill" onClick={() => (phoneView === 'supervisor' ? setView('chat') : setDrawerOpen(true))}>
+            <HalykMark size={18} className="brand-logo" />
             {phoneView === 'supervisor' ? 'Супервизор' : 'Voice Router'}
           </button>
           {!checking && !health && (
