@@ -73,7 +73,7 @@ function AssistantMessage({ m, onConfirm }: { m: Message; onConfirm?: (yes: bool
         {m.pending && (
           <div className="thinking">
             <span className="thinking__dots"><i /><i /><i /></span>
-            Выбираю сценарий…
+            Разбираюсь в вопросе…
           </div>
         )}
         {m.error && (

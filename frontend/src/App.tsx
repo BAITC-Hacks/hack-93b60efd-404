@@ -9,8 +9,7 @@ import { TracePanel } from './components/TracePanel';
 import { VoiceOrb, type OrbState } from './components/VoiceOrb';
 import { CloudCanvas } from './components/CloudCanvas';
 import { PHONE_H, PHONE_W, StatusBar, usePhoneFrame } from './components/PhoneFrame';
-import { IconAlert, IconBranch, IconClose, IconMenu, IconSliders, HalykLogo, HalykMark } from './components/icons';
-import { ms } from './lib/format';
+import { IconAlert, IconClose, IconMenu, IconSliders, HalykLogo, HalykMark } from './components/icons';
 import { uid, useConversations } from './state/useConversations';
 import type { ClientTimings, Review } from './state/types';
 import { onSpeakingChange, speak, stopSpeaking } from './voice/tts';
@@ -36,7 +35,7 @@ export default function App() {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [appError, setAppError] = useState<string | null>(null);
-  const [voiceOut, setVoiceOut] = useState(false);
+  const voiceOut = false;
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
   const liveConvRef = useRef<string | null>(null);
@@ -47,7 +46,7 @@ export default function App() {
 
   useEffect(() => {
     void fetchHealth().then(setHealth).catch(() =>
-      setAppError('Бэкенд недоступен. Запустите сервер и обновите страницу.')
+      setAppError('Помощник временно недоступен. Обновите страницу чуть позже.')
     );
   }, []);
 
@@ -169,6 +168,11 @@ export default function App() {
         store.append(target.convId, { id: turn.userId, role: 'user', text: request, input: 'voice', createdAt: Date.now() });
       }
     },
+    onToolError: (callId, detail) => {
+      const target = liveCallsRef.current.get(callId);
+      liveCallsRef.current.delete(callId);
+      if (target) store.patch(target.convId, target.botId, { pending: false, text: '', error: detail });
+    },
   });
 
   useEffect(() => { if (voice.error) setSession(false); }, [voice.error]);
@@ -285,7 +289,7 @@ export default function App() {
     if (voice.state === 'speaking' || speaking) return lastBot?.text ?? '';
     if (session && muted) return 'Микрофон выключен';
     if (session) return 'Слушаю…';
-    if (!health) return 'Ожидание подключения к серверу';
+    if (!health) return 'Подключаем помощника…';
     return voice.supported ? 'Нажмите на шар и расскажите, что случилось' : 'Этот браузер не умеет записывать звук. Используйте текстовый ввод.';
   })();
 
@@ -351,34 +355,17 @@ export default function App() {
           setDrawerOpen(false);
         }}
         onClose={() => setDrawerOpen(false)}
-        settings={
-          <>
-            <div className="settings__row">
-              <span>Язык речи</span>
-              <span>Русский / қазақша — автоматически</span>
-            </div>
-            <label className="settings__row">
-              <span>Озвучивать ответы в чате</span>
-              <input type="checkbox" className="switch" checked={voiceOut} onChange={(e) => setVoiceOut(e.target.checked)} />
-            </label>
-            <div className="settings__row">
-              <span>Голос</span>
-              <span>Синтезирован ИИ</span>
-            </div>
-          </>
-        }
       />
 
       <main className="main">
         <header className="topbar">
-          <button className="chip-btn round-sm" onClick={() => setDrawerOpen(true)} aria-label="Разговоры и настройки">
+          <button className="chip-btn round-sm" onClick={() => setDrawerOpen(true)} aria-label="Разговоры">
             <IconMenu width={18} height={18} />
           </button>
           <button className="chip-btn title-pill" onClick={() => (phoneView === 'supervisor' ? setView('chat') : setDrawerOpen(true))}>
             <HalykMark size={18} className="brand-logo" />
-            {phoneView === 'supervisor' ? 'Супервизор' : 'Voice Router'}
+            {phoneView === 'supervisor' ? 'Супервизор' : 'Помощник'}
           </button>
-          {health && <span className="live-pill">сервер подключён</span>}
           <div className="topbar__spacer" />
           {phoneView === 'chat' && (
             <button
@@ -390,8 +377,8 @@ export default function App() {
                 } else setTraceOpen((v) => !v);
               }}
               aria-pressed={traceOpen}
-              aria-label="Трассировка"
-              title="Трассировка: сценарий, обоснование, задержки"
+              aria-label="Как обработан запрос"
+              title="Как обработан запрос"
             >
               <IconSliders width={18} height={18} />
             </button>
@@ -420,20 +407,6 @@ export default function App() {
                   ))}
                 </div>
               )}
-              {lastBot?.turn && !busy && (
-                <button
-                  className="route-pill"
-                  onClick={() => {
-                    setSelectedId(lastBot.id);
-                    setTraceOpen(true);
-                  }}
-                  title="Открыть трассировку"
-                >
-                  <IconBranch width={13} height={13} />
-                  <span className="route-pill__name">{lastBot.turn.route_details.map((route) => route.name).join(' + ')}</span>
-                  <span className="route-pill__ms">{ms(lastBot.turn.trace.router_ms)}</span>
-                </button>
-              )}
             </div>
           </div>
         ) : (
@@ -458,7 +431,7 @@ export default function App() {
               voice.clearError();
               setAppError(null);
               if (!health) void fetchHealth().then(setHealth).catch(() =>
-                setAppError('Бэкенд недоступен. Запустите сервер и повторите попытку.'));
+                setAppError('Помощник временно недоступен. Попробуйте ещё раз.'));
             }} aria-label={health ? 'Закрыть' : 'Повторить подключение'}>
               <IconClose width={14} height={14} />
             </button>

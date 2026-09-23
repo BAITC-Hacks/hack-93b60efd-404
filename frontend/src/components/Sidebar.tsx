@@ -1,4 +1,3 @@
-import type { ReactNode } from 'react';
 import type { Conversation } from '../state/types';
 import { relTime } from '../lib/format';
 import { IconChart, IconChat, IconPlus, IconTrash, HalykLogo } from './icons';
@@ -13,18 +12,9 @@ interface Props {
   onDelete: (id: string) => void;
   onView: (v: 'chat' | 'supervisor') => void;
   onClose: () => void;
-  settings: ReactNode;
 }
 
-function lastScenario(c: Conversation) {
-  for (let i = c.messages.length - 1; i >= 0; i--) {
-    const t = c.messages[i].turn;
-    if (t) return t.route_details.map((route) => route.name).join(' + ');
-  }
-  return null;
-}
-
-export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, onDelete, onView, onClose, settings }: Props) {
+export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, onDelete, onView, onClose }: Props) {
   return (
     <>
       <div className={`scrim ${open ? 'is-open' : ''}`} onClick={onClose} aria-hidden />
@@ -32,8 +22,7 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
         <div className="sidebar__brand">
           <HalykLogo height={30} className="brand-logo" />
           <div>
-            <div className="sidebar__title">Voice Router</div>
-            <div className="sidebar__sub">Контакт-центр · страхование</div>
+            <div className="sidebar__title">Страховой помощник</div>
           </div>
         </div>
 
@@ -55,14 +44,12 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
         <ul className="convlist">
           {conversations.length === 0 && <li className="convlist__empty">Здесь появятся ваши разговоры с агентом.</li>}
           {conversations.map((c) => {
-            const scen = lastScenario(c);
             return (
               <li key={c.id}>
                 <div className={`convitem ${c.id === activeId && view === 'chat' ? 'is-active' : ''}`}>
                   <button className="convitem__main" onClick={() => onSelect(c.id)}>
                     <span className="convitem__title">{c.title}</span>
                     <span className="convitem__meta">
-                      {scen ? `${scen} · ` : ''}
                       {relTime(c.updatedAt)}
                     </span>
                   </button>
@@ -75,8 +62,6 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
           })}
         </ul>
 
-        <div className="settings">{settings}</div>
-        <div className="sidebar__foot">Данные синтетические. Агент не выполняет необратимых действий без подтверждения клиента.</div>
       </aside>
     </>
   );

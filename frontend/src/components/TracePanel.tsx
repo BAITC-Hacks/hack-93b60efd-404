@@ -41,14 +41,14 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
   const done = turns.filter(({ bot }) => bot.text && !bot.pending).length;
 
   return (
-    <aside className="trace" aria-label="Трассировка">
+    <aside className="trace" aria-label="Как обработан запрос">
       <button className="sheet-grip" onClick={onClose} tabIndex={-1} aria-hidden />
       <header className="trace__head">
         <div>
-          <div className="trace__title">Трассировка</div>
+          <div className="trace__title">Как обработан запрос</div>
           {turns.length > 0 && <div className="trace__eyebrow">{plural(done, 'реплика', 'реплики', 'реплик')}</div>}
         </div>
-        <button className="iconbtn" onClick={onClose} aria-label="Скрыть трассировку"><IconClose /></button>
+        <button className="iconbtn" onClick={onClose} aria-label="Скрыть детали"><IconClose /></button>
       </header>
       {!turns.length ? (
         <p className="trace__empty">После первой реплики здесь появятся выбранный сценарий, обоснование и время каждого этапа.</p>
@@ -73,7 +73,6 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
                         onClick={() => { setOpenId(open ? null : bot.id); if (!open) onSelect(bot.id); }} />
                     </> : bot.text && !bot.pending ? <>
                       <p className="tturn__text">{bot.text}</p>
-                      <span className="routechip__path routechip__path--llm">Свободный разговор · Gemini Live</span>
                     </> : null}
                   </div>
                 </div>
@@ -97,34 +96,20 @@ function TurnDetails({ message, onReview }: { message: Message; onReview: (revie
         <h3>Выбранный сценарий</h3>
         {turn.route_details.map((route) => (
           <div className="picked" key={route.id}>
-            <div className="picked__row"><code>{route.id}</code><b>{route.name}</b></div>
+            <div className="picked__row"><b>{route.name}</b></div>
           </div>
         ))}
         <div className="kv">
           <span>Язык ответа</span><b>{LANG_LABEL[turn.language]}</b>
-          <span>Модель</span><b>{trace.model}</b>
-          <span>Продолжение темы</span><b>{trace.is_continuation ? 'Да' : 'Нет'}</b>
-          <span>Повторная проверка</span><b>{trace.ambiguity_reviewed ? 'Да' : 'Нет'}</b>
+          <span>Связь с прошлой темой</span><b>{trace.is_continuation ? 'Продолжение' : 'Новая тема'}</b>
         </div>
       </section>
-      <section className="tsec"><h3>Почему</h3><p className="reason">{trace.reason}</p></section>
+      <section className="tsec"><h3>Почему</h3><p className="reason">{trace.reason.replace(/\b[A-Z]{2}\d{2}\b/g, (id) =>
+        [...turn.route_details, ...trace.alternative_details].find((route) => route.id === id)?.name ?? 'другой сценарий')}</p></section>
       {trace.alternative_details.length > 0 && <section className="tsec">
         <h3>Альтернативы</h3>
         <ul className="alts">{trace.alternative_details.map((route) =>
-          <li key={route.id}><code>{route.id}</code> {route.name}</li>)}</ul>
-      </section>}
-      {(turn.active_scenario || turn.pending_scenarios.length > 0) && <section className="tsec">
-        <h3>Контекст</h3>
-        {turn.active_scenario && <p className="note">Активный сценарий: <code>{turn.active_scenario}</code></p>}
-        {turn.pending_scenarios.length > 0 && <div className="stack">
-          <span>Отложенные темы:</span>
-          {turn.pending_scenarios.map((id) => <code key={id}>{id}</code>)}
-        </div>}
-      </section>}
-      {trace.actions.length > 0 && <section className="tsec">
-        <h3>Действия</h3>
-        <div className="kv kv--params">{trace.actions.map((action, index) =>
-          <div key={index}><span>{action.name ?? 'Действие'}</span> <b>{action.status ?? '—'}</b></div>)}</div>
+          <li key={route.id}>{route.name}</li>)}</ul>
       </section>}
       <section className="tsec">
         <h3>Задержка по этапам</h3>
@@ -152,7 +137,6 @@ function TurnDetails({ message, onReview }: { message: Message; onReview: (revie
             onBlur={() => onReview({ verdict: 'wrong', correct_scenario: correct.trim() || undefined })} />
         </label>}
       </section>
-      <details className="raw"><summary>Ответ сервера (JSON)</summary><pre>{JSON.stringify(turn, null, 2)}</pre></details>
     </div>
   );
 }

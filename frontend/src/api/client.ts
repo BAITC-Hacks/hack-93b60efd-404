@@ -35,8 +35,9 @@ export async function sendText(sessionId: string, text: string, speak: boolean, 
 
 export async function createGeminiToken(): Promise<string> {
   const response = await fetch(BASE + '/gemini/token', { method: 'POST' });
+  if (!response.ok) throw new Error('Голосовая связь недоступна. Попробуйте ещё раз.');
   const token = await readResponse<{ name: string }>(response);
-  if (!token.name) throw new Error('Gemini не выдал временный токен');
+  if (!token.name) throw new Error('Голосовая связь недоступна. Попробуйте ещё раз.');
   return token.name;
 }
 

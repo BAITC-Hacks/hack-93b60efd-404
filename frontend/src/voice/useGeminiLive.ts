@@ -10,6 +10,7 @@ interface Options {
   onOutput: (text: string, finished: boolean) => void;
   onTool: (text: string, signal: AbortSignal, callId: string) => Promise<TurnResponse>;
   onRoute: (turn: TurnResponse, request: string, callId: string) => void;
+  onToolError: (callId: string, detail: string) => void;
 }
 
 const INSTRUCTIONS = [
@@ -21,7 +22,7 @@ const INSTRUCTIONS = [
   'For any insurance price, policy, coverage, claim, change, purchase, human handoff, or follow-up to one of these,',
   'call resolve_insurance_request with the full current utterance. The backend owns all facts, routing, and actions.',
   'Never invent rates, statuses, policy terms, or a completed action. Wait for the tool result before stating one.',
-  'While the tool runs, you may briefly acknowledge that you are checking, then keep listening.',
+  'For insurance requests, wait for the tool result before speaking. Do not promise to check or ask the caller to wait.',
   'Paraphrase the tool result naturally and accurately. If it asks for a detail or approval, ask the caller for it.',
   'Ask for one missing detail at a time and explain briefly why sensitive data such as an IIN is needed.',
   'If interrupted, stop speaking and listen. An interruption alone does not cancel a backend action.',
@@ -53,12 +54,12 @@ function enqueuePcm(data: string, context: AudioContext, queue: Set<AudioBufferS
   source.start(when);
 }
 
-export function useGeminiLive({ onInput, onOutput, onTool, onRoute }: Options) {
+export function useGeminiLive({ onInput, onOutput, onTool, onRoute, onToolError }: Options) {
   const [state, setState] = useState<VoiceState>('idle');
   const [error, setError] = useState<string | null>(null);
   const levelRef = useRef(0);
-  const callbacks = useRef({ onInput, onOutput, onTool, onRoute });
-  callbacks.current = { onInput, onOutput, onTool, onRoute };
+  const callbacks = useRef({ onInput, onOutput, onTool, onRoute, onToolError });
+  callbacks.current = { onInput, onOutput, onTool, onRoute, onToolError };
   const sessionRef = useRef<Session | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
   const contextRef = useRef<AudioContext | null>(null);
@@ -176,7 +177,9 @@ export function useGeminiLive({ onInput, onOutput, onTool, onRoute }: Options) {
                 }] });
               }).catch((cause) => {
                 if (controller.signal.aborted || !activeRef.current) return;
-                const detail = cause instanceof Error ? cause.message : 'Backend request failed';
+                const detail = 'Не удалось проверить данные. Повторите вопрос.';
+                console.error('Insurance request failed', cause);
+                callbacks.current.onToolError(call.id!, detail);
                 setError(detail);
                 sessionRef.current?.sendToolResponse({ functionResponses: [{
                   id: call.id!, name: call.name!, scheduling: FunctionResponseScheduling.WHEN_IDLE,
@@ -188,9 +191,15 @@ export function useGeminiLive({ onInput, onOutput, onTool, onRoute }: Options) {
               });
             }
           },
-          onerror: () => { if (activeRef.current) setError('Связь с Gemini прервалась. Начните новый разговор.'); },
+          onerror: (cause) => { if (activeRef.current) {
+            console.error('Voice connection failed', cause);
+            setError('Голосовая связь прервалась. Начните разговор снова.');
+          } },
           onclose: () => { if (activeRef.current) {
-            setError('Голосовое соединение закрыто. Начните новый разговор.');
+            for (const id of callsRef.current.keys()) {
+              callbacks.current.onToolError(id, 'Ответ не получен. Повторите вопрос.');
+            }
+            setError('Голосовая связь прервалась. Начните разговор снова.');
             stop();
           } },
         },
@@ -223,7 +232,9 @@ export function useGeminiLive({ onInput, onOutput, onTool, onRoute }: Options) {
       };
       setState('listening');
     } catch (cause) {
-      const detail = cause instanceof Error ? cause.message : 'Не удалось подключиться к Gemini.';
+      console.error('Voice start failed', cause);
+      const detail = cause instanceof Error && cause.message.includes('поддельный микрофон')
+        ? cause.message : 'Не удалось начать голосовой разговор. Проверьте соединение и попробуйте снова.';
       stop();
       setError(detail);
     }
