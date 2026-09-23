@@ -127,9 +127,7 @@ class DialogueService:
                 for route_id in route_ids
             )
             if needs_slots:
-                extraction = self.slot_extractor.extract(
-                    transcript, route_ids, response_language=response_language
-                )
+                extraction = self.slot_extractor.extract(transcript, route_ids)
                 if ("phone" in extraction.values and state.slot_values.get("phone")
                         not in {None, extraction.values["phone"]}):
                     state.slot_values.pop("policy_number", None)
@@ -228,9 +226,6 @@ class DialogueService:
                 "ambiguity_reviewed": result.ambiguity_reviewed,
                 "router_ms": round(result.router_ms, 1),
                 "extractor_ms": round(extraction.extractor_ms, 1) if extraction else None,
-                "jev_ms": round(extraction.jev_ms, 1) if extraction else None,
-                "jev_probability": extraction.jev_probability if extraction else None,
-                "jev_skipped_luna": extraction.jev_skipped_luna if extraction else False,
                 "response_ms": round(state.response_ms, 1),
                 "total_ms": round(total_ms, 1),
                 "stt_ms": None,

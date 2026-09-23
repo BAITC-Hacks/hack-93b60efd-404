@@ -3,13 +3,11 @@
 from __future__ import annotations
 
 import json
-import os
 import re
 import time
 from dataclasses import dataclass
 from datetime import date
 from typing import Any, Literal
-from urllib.request import Request, urlopen
 
 from openai import OpenAI
 from pydantic import BaseModel, Field
@@ -36,9 +34,6 @@ class ExtractionResult:
     extractor_ms: float
     input_tokens: int
     output_tokens: int
-    jev_ms: float = 0
-    jev_probability: float | None = None
-    jev_skipped_luna: bool = False
 
 
 def normalize_slot(definition: dict[str, Any], raw: str) -> Any:
@@ -84,13 +79,8 @@ class OpenAISlotExtractor:
         self.catalog = catalog
         self.model = model
         self.client = client or OpenAI()
-        self.typesafe_key = os.environ.get("TYPESAFE_API_KEY")
-        if not self.typesafe_key:
-            raise RuntimeError("TYPESAFE_API_KEY is required for the Jev slot gate")
 
-    def extract(
-        self, transcript: str, scenario_ids: list[str], *, response_language: str
-    ) -> ExtractionResult:
+    def extract(self, transcript: str, scenario_ids: list[str]) -> ExtractionResult:
         allowed: dict[str, dict[str, Any]] = {}
         for scenario_id in scenario_ids:
             scenario = self.catalog.require_route(scenario_id)
@@ -110,43 +100,6 @@ class OpenAISlotExtractor:
             }
             for name, definition in allowed.items()
         ]
-        jev_started = time.perf_counter()
-        request = Request(
-            "https://api.typesafe.ai/v1/systemone",
-            data=json.dumps({
-                "model": "jev-1.13.0",
-                "state": {"utterance": transcript, "allowed_slots": descriptions},
-                "questions": {"has_explicit_slot": {
-                    "type": "noul",
-                    "instructions": (
-                        "Does `utterance` explicitly state a usable value for at least one "
-                        "field in `allowed_slots`? Judge the customer's words, including "
-                        "Russian, Kazakh, and mixed speech. Do not infer an unstated value."
-                    ),
-                    "criteria": {
-                        "true": "At least one listed field has a value explicitly stated by the caller.",
-                        "false": "Only an intent or question is stated; no listed field has a value.",
-                    },
-                }},
-            }, ensure_ascii=False).encode("utf-8"),
-            headers={
-                "Authorization": f"Bearer {self.typesafe_key}",
-                "Content-Type": "application/json",
-            },
-            method="POST",
-        )
-        with urlopen(request, timeout=5) as response:
-            answer = json.load(response)
-        probability = answer["answers"]["has_explicit_slot"]["noul"]
-        if not isinstance(probability, (int, float)) or not 0 <= probability <= 1:
-            raise ValueError("Jev returned an invalid slot-presence probability")
-        jev_ms = (time.perf_counter() - jev_started) * 1000
-        if probability <= 0.05:
-            return ExtractionResult(
-                values={}, response_language=response_language, rejected=[],
-                extractor_ms=0, input_tokens=0, output_tokens=0,
-                jev_ms=jev_ms, jev_probability=probability, jev_skipped_luna=True,
-            )
         travel_zones = (
             self.catalog.knowledge_base["products"]["travel"]["zones"]
             if "SC06" in scenario_ids else None
@@ -211,6 +164,4 @@ class OpenAISlotExtractor:
             extractor_ms=elapsed,
             input_tokens=usage.input_tokens if usage else 0,
             output_tokens=usage.output_tokens if usage else 0,
-            jev_ms=jev_ms,
-            jev_probability=probability,
         )

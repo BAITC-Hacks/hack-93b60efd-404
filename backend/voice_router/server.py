@@ -3,15 +3,23 @@
 from __future__ import annotations
 
 import json
+import ipaddress
+import base64
+import hmac
 import logging
+import mimetypes
 import os
 import re
+import socket
+import subprocess
 import time
 import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from pathlib import Path
 from threading import Lock
 from typing import Any
 from urllib.error import HTTPError, URLError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 from openai import OpenAI, OpenAIError
@@ -33,6 +41,40 @@ AUDIO_TYPES = {
     "audio/m4a": "m4a",
 }
 MAX_BODY_BYTES = 10 * 1024 * 1024
+
+
+def install_local_dns_recovery() -> None:
+    """Resolve real provider hosts when this Mac's system resolver is unavailable."""
+    resolver = os.environ.get("VOICE_ROUTER_DNS_RESOLVER")
+    if not resolver:
+        return
+    ipaddress.ip_address(resolver)
+    original = socket.getaddrinfo
+    provider_hosts = {"api.openai.com", "generativelanguage.googleapis.com"}
+
+    def getaddrinfo(host: str, port: int, *args: Any, **kwargs: Any) -> Any:
+        try:
+            return original(host, port, *args, **kwargs)
+        except socket.gaierror:
+            name = host.decode() if isinstance(host, bytes) else host
+            if name not in provider_hosts:
+                raise
+            lookup = subprocess.run(
+                ["dig", "+short", "+time=1", "+tries=1", f"@{resolver}", name, "A"],
+                capture_output=True, text=True, timeout=3, check=True,
+            )
+            addresses = []
+            for value in lookup.stdout.splitlines():
+                try:
+                    addresses.append(str(ipaddress.IPv4Address(value)))
+                except ipaddress.AddressValueError:
+                    continue
+            if not addresses:
+                raise
+            logging.warning("System DNS failed for %s; resolved via configured DNS server", name)
+            return original(addresses[0], port, *args, **kwargs)
+
+    socket.getaddrinfo = getaddrinfo
 
 class Application:
     def __init__(self) -> None:
@@ -114,6 +156,50 @@ class Application:
 
 def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
     class Handler(BaseHTTPRequestHandler):
+        def _authorized(self) -> bool:
+            expected = os.environ.get("VOICE_ROUTER_BASIC_AUTH")
+            if not expected or self.path == "/api/health":
+                return True
+            header = self.headers.get("Authorization", "")
+            try:
+                received = base64.b64decode(header.removeprefix("Basic "), validate=True).decode()
+            except (ValueError, UnicodeDecodeError):
+                received = ""
+            if header.startswith("Basic ") and hmac.compare_digest(received, expected):
+                return True
+            self.send_response(401)
+            self.send_header("WWW-Authenticate", 'Basic realm="Voice Router"')
+            self.send_header("Content-Length", "0")
+            self.end_headers()
+            return False
+
+        def _api_path(self) -> str:
+            return self.path.removeprefix("/api") if self.path.startswith("/api/") else self.path
+
+        def _serve_static(self) -> bool:
+            root = os.environ.get("VOICE_ROUTER_STATIC_DIR")
+            if not root:
+                return False
+            base = Path(root).resolve()
+            request_path = urlsplit(self.path).path
+            candidate = (base / request_path.lstrip("/")).resolve()
+            if not candidate.is_relative_to(base):
+                self._send_json(404, {"error": "Not found"})
+                return True
+            if not candidate.is_file():
+                candidate = base / "index.html"
+            if not candidate.is_file():
+                self._send_json(404, {"error": "Application is not built"})
+                return True
+            payload = candidate.read_bytes()
+            self.send_response(200)
+            self.send_header("Content-Type", mimetypes.guess_type(candidate.name)[0] or "application/octet-stream")
+            self.send_header("Content-Length", str(len(payload)))
+            self.send_header("Cache-Control", "no-store" if candidate.name == "index.html" else "public, max-age=86400")
+            self.end_headers()
+            self.wfile.write(payload)
+            return True
+
         def _cors(self) -> None:
             origin = self.headers.get("Origin")
             allowed = os.environ.get("VOICE_ROUTER_CORS_ORIGIN", "*")
@@ -144,16 +230,21 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
             return body
 
         def do_OPTIONS(self) -> None:
+            if not self._authorized():
+                return
             self.send_response(204)
             self._cors()
             self.send_header("Content-Length", "0")
             self.end_headers()
 
         def do_GET(self) -> None:
-            if self.path == "/health":
+            if not self._authorized():
+                return
+            path = self._api_path()
+            if path == "/health":
                 self._send_json(200, {"status": "process_running"})
                 return
-            if self.path == "/catalog":
+            if path == "/catalog":
                 self._send_json(200, {
                     "scenarios": [app.catalog.route_summary(item["scenario_id"])
                                   for item in app.catalog.scenarios],
@@ -161,7 +252,7 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                                        for item in app.catalog.system_intents],
                 })
                 return
-            match = re.fullmatch(r"/audio/([a-f0-9]{32})", self.path)
+            match = re.fullmatch(r"/audio/([a-f0-9]{32})", path)
             if match:
                 with app.audio_lock:
                     audio = app.audio.get(match.group(1))
@@ -175,11 +266,16 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                 self.end_headers()
                 self.wfile.write(audio)
                 return
+            if not self.path.startswith("/api/") and self._serve_static():
+                return
             self._send_json(404, {"error": "Unknown endpoint"})
 
         def do_POST(self) -> None:
+            if not self._authorized():
+                return
             try:
-                if self.path == "/gemini/token":
+                path = self._api_path()
+                if path == "/gemini/token":
                     origin = self.headers.get("Origin")
                     allowed = os.environ.get("VOICE_ROUTER_CORS_ORIGIN")
                     local_origins = {"http://localhost:5173", "http://127.0.0.1:5173"}
@@ -190,12 +286,12 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                         raise ValueError("Token request must have no body")
                     self._send_json(201, app.create_gemini_token())
                     return
-                if self.path == "/sessions":
+                if path == "/sessions":
                     session = app.dialogue.create_session()
                     self._send_json(201, {"session_id": session.session_id})
                     return
                 match = re.fullmatch(
-                    r"/sessions/([a-f0-9]{32})/turns/(text|audio)", self.path
+                    r"/sessions/([a-f0-9]{32})/turns/(text|audio)", path
                 )
                 if not match:
                     self._send_json(404, {"error": "Unknown endpoint"})
@@ -221,10 +317,10 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
                 self._send_json(422, {"error": str(exc)})
             except OpenAIError as exc:
                 logging.exception("OpenAI request failed")
-                self._send_json(502, {"error": type(exc).__name__, "message": "External AI request failed"})
+                self._send_json(502, {"error": type(exc).__name__, "message": "Помощник временно недоступен. Попробуйте ещё раз."})
             except (HTTPError, URLError) as exc:
                 logging.exception("Gemini token creation failed")
-                self._send_json(502, {"error": type(exc).__name__, "message": "Gemini voice connection failed"})
+                self._send_json(502, {"error": type(exc).__name__, "message": "Голосовая связь временно недоступна. Попробуйте ещё раз."})
             except Exception as exc:
                 logging.exception("Voice Router request failed")
                 self._send_json(500, {"error": type(exc).__name__, "message": "Internal request failed"})
@@ -233,6 +329,9 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
 
 
 def main() -> None:
+    install_local_dns_recovery()
+    if os.environ.get("VOICE_ROUTER_STATIC_DIR") and not os.environ.get("VOICE_ROUTER_BASIC_AUTH"):
+        raise RuntimeError("Public web serving requires VOICE_ROUTER_BASIC_AUTH")
     host = os.environ.get("VOICE_ROUTER_HOST", "127.0.0.1")
     port = int(os.environ.get("VOICE_ROUTER_PORT", "8000"))
     app = Application()

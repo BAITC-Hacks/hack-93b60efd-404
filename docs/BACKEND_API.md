@@ -4,7 +4,7 @@ The browser uses Gemini Live for streaming microphone input and spoken replies. 
 
 ## Start and base URL
 
-From the repository root, after `uv sync` and setting server-side `OPENAI_API_KEY`, `GEMINI_API_KEY`, and `TYPESAFE_API_KEY`:
+From the repository root, after `uv sync` and setting server-side `OPENAI_API_KEY` and `GEMINI_API_KEY`:
 
 ```sh
 uv run python -m voice_router.server
@@ -27,7 +27,7 @@ For text-only diagnostics, `POST /sessions/{session_id}/turns/text` accepts `app
 
 Every successful turn returns `session_id`, `turn`, `answer_text`, `language` (`ru` or `kk`), ordered `route` IDs plus `route_details` with human-readable names, `active_scenario`, `pending_scenarios`, and `trace`. Spoken turns also include `audio_url` and `audio_content_type`. Render `route_details`, `trace.reason`, and `trace.alternative_details` in the supervisor view; do not hide the model decision behind the conversational answer.
 
-`trace` includes the final `transcript`, selected scenario IDs, alternatives, short reason, model name, `ambiguity_reviewed`, `is_continuation`, `router_ms`, `jev_ms`, `jev_probability`, `jev_skipped_luna`, `extractor_ms`, `response_ms`, `server_total_ms`, token counts, rejected slots, and action results. `stt_ms` and `tts_generation_ms` apply only to the separate completed-audio path. `tts_first_audio_ms` is currently null; do not label server time as browser first-audio latency. For compound requests, display every ID in `route` and the deferred IDs in `pending_scenarios`.
+`trace` includes the final `transcript`, selected scenario IDs, alternatives, short reason, model name, `ambiguity_reviewed`, `is_continuation`, `router_ms`, `extractor_ms`, `response_ms`, `server_total_ms`, token counts, rejected slots, and action results. The UI translates the selected and alternative scenario IDs to human-readable names. `stt_ms` and `tts_generation_ms` apply only to the separate completed-audio path. `tts_first_audio_ms` is currently null; do not label server time as browser first-audio latency. For compound requests, the API returns every ID in `route` and deferred IDs in `pending_scenarios`.
 
 An irreversible action returns `trace.actions[].status = "awaiting_confirmation"` and asks the customer to approve or cancel. The next spoken reply is interpreted by the LLM in that pending-action context. Only an unambiguous approval allows execution. The same action parameters are not executed twice in one session. Some non-irreversible case actions create a local record, but no external SMS, payment, live operator call, or actual booking is claimed.
 
