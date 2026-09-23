@@ -23,6 +23,7 @@ class RouteDecision(BaseModel):
 
 class ConfirmationDecision(BaseModel):
     decision: Literal["approve", "reject", "change_request", "unclear"]
+    has_new_request: bool = Field(description="Whether this reply also asks a separate customer question")
     reason: str = Field(description="Short explanation grounded in the customer's actual reply")
 
 
@@ -85,6 +86,7 @@ class OpenAIRouter:
         *,
         history: list[dict[str, str]] | None = None,
         active_scenario: str | None = None,
+        pending_scenarios: list[str] | None = None,
     ) -> RouteResult:
         if not transcript.strip():
             raise ValueError("A real, non-empty transcript is required")
@@ -96,11 +98,12 @@ class OpenAIRouter:
             "a fictional insurer. Choose only IDs from the supplied catalogue. "
             "Use descriptions and not_this_if boundaries, not surface keyword matching. "
             "Handle natural Russian, Kazakh, and mixed-language speech. Preserve all "
-            "independent intents in a compound request. Put urgent scenarios first; "
-            "otherwise preserve mention order. Use SYS_UNCLEAR when the request is "
+            "independent intents in a compound request. Put urgent scenarios "
+            "and explicit requests for a human operator first; otherwise preserve "
+            "mention order. Use SYS_UNCLEAR when the request is "
             "genuinely ambiguous, SYS_OUT_OF_SCOPE for unsupported services, and "
             "SYS_GOODBYE only when ending the conversation. For a follow-up, use "
-            "history and active_scenario without dropping a new topic. "
+            "history, active_scenario, and pending_scenarios without dropping a new topic. "
             "Missing identifiers or slots do not make a clear intent ambiguous: "
             "choose the scenario, then collect its required data downstream. "
             "Do not create a second intent when a product feature, price factor, "
@@ -114,6 +117,7 @@ class OpenAIRouter:
             "transcript": transcript,
             "history": (history or [])[-10:],
             "active_scenario": active_scenario,
+            "pending_scenarios": pending_scenarios or [],
         }
         started = time.perf_counter()
         response = self.client.responses.parse(
@@ -163,7 +167,10 @@ class OpenAIRouter:
                     "You are interpreting a customer's answer to one pending insurance action. "
                     "Approve only if the customer explicitly and unambiguously authorizes "
                     "that exact action in this turn. Reject if they refuse or cancel it. "
-                    "If they change any parameter or switch topics, return change_request; "
+                    "If they change a parameter, return change_request. A refusal can "
+                    "coexist with a separate new question: return reject and set "
+                    "has_new_request true. A topic switch without a clear refusal is "
+                    "change_request with has_new_request true. "
                     "if uncertain, return unclear. Understand natural Russian, Kazakh, and "
                     "mixed language. A direct, unambiguous affirmation of the read-back "
                     "details in response to the explicit approval question authorizes "
@@ -322,7 +329,8 @@ class OpenAIRouter:
                     "explicitly ACCEPTS starting that purchase (approve), DECLINES it "
                     "(reject), CHANGES quote details or switches topic (change_request), "
                     "or is unclear. Providing a phone number together with acceptance "
-                    "is still approval. This is only permission to collect details and "
+                    "is still approval. Set has_new_request true only for a separate "
+                    "additional question. This is only permission to collect details and "
                     "show a later irreversible-action preview, NOT permission to issue "
                     "a policy. Understand Russian, Kazakh, and mixed speech."
                 )},

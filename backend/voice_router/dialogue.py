@@ -72,7 +72,9 @@ class DialogueService:
             interpretation, model_ms, input_tokens, output_tokens = self.router.interpret_confirmation(
                 transcript, pending_action=state.pending_confirmation, history=state.history
             )
-            if interpretation.decision in {"approve", "reject", "unclear"}:
+            if interpretation.has_new_request and interpretation.decision in {"reject", "change_request"}:
+                state.pending_confirmation = None
+            elif interpretation.decision in {"approve", "reject", "unclear"}:
                 return self._resolve_confirmation(
                     state, transcript, interpretation.decision,
                     interpretation.reason, model_ms, input_tokens, output_tokens,
@@ -87,6 +89,7 @@ class DialogueService:
             transcript,
             history=state.history,
             active_scenario=state.active_scenario,
+            pending_scenarios=state.pending_scenarios,
         )
         decision = result.decision
         response_language = decision.language if decision.language != "mixed" else state.response_language
@@ -101,6 +104,10 @@ class DialogueService:
                 state.active_scenario = None
                 state.active_completed = False
                 state.pending_scenarios.clear()
+                state.pending_confirmation = None
+                state.slot_values.clear()
+                state.travel_quote = None
+                state.travel_purchase_requested = False
         else:
             if state.active_scenario and state.active_scenario != first_id and not state.active_completed:
                 if state.active_scenario not in state.pending_scenarios:
@@ -145,6 +152,8 @@ class DialogueService:
             ]
             if missing:
                 answer = self.catalog.slots[missing[0]]["prompt"][response_language]
+                if first_id == "SC17" and missing[0] == "claim_number" and "phone" not in state.slot_values:
+                    answer = scenario["responses"][response_language]["opening"]
                 if first_id == "SC11":
                     answer = (
                         "Если есть пострадавшие, сначала звоните 112. Включите аварийку, выставьте знак и не перемещайте машины до оформления. "
@@ -164,7 +173,22 @@ class DialogueService:
                 state.active_completed = any(
                     action.get("status") == "executed" for action in action_trace
                 )
-            if state.pending_scenarios:
+            for extra_id in route_ids[1:]:
+                if extra_id not in state.pending_scenarios or extra_id.startswith("SYS_"):
+                    continue
+                extra = self.catalog.require_route(extra_id)
+                if (extra["slots"]["required"] or extra["requires_identification"]
+                        or "kb_lookup" not in extra["actions"]
+                        or any(self.catalog.actions[name]["irreversible"] for name in extra["actions"])):
+                    continue
+                extra_answer, extra_trace = self._answer_with_data(
+                    state, extra_id, response_language, state.slot_values, transcript
+                )
+                if any(item.get("status") == "executed" for item in extra_trace):
+                    answer = extra_answer + " " + answer
+                    action_trace.extend(extra_trace)
+                    state.pending_scenarios.remove(extra_id)
+            if any(extra_id in state.pending_scenarios for extra_id in route_ids[1:]):
                 answer += (
                     " Я также сохранил ваш другой вопрос."
                     if response_language == "ru"
@@ -485,6 +509,22 @@ class DialogueService:
                 ]
             result = {"answer": selected, "product_type": values["product_type"],
                       "source": result["source"]}
+            if "claim_number" in values and "phone" in values:
+                try:
+                    client = self.actions.execute("find_client", phone=values["phone"])
+                    claim = self.actions.execute("get_claim", claim_number=values["claim_number"])
+                    if claim["client_id"] == client["client_id"]:
+                        result["claim_status"] = claim["status"]
+                        result["claim_next_step"] = claim["next_step"]
+                except ActionError:
+                    pass
+        if scenario_id == "SC31" and "policy_number" in values:
+            try:
+                result["current_policy_product"] = self.actions._policy(
+                    values["policy_number"]
+                )["product"]
+            except ActionError:
+                pass
         if scenario_id == "SC30" and result["payment_status"] == "charged_policy_not_issued":
             handoff_params = {"queue": scenario["handoff"]["queue"],
                               "summary": " | ".join(
