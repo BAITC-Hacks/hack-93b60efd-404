@@ -56,9 +56,9 @@ void main() {
   vec2 q = vec2(fbm(p * scale + vec2(t, 0.0)), fbm(p * scale + vec2(5.2, 1.3) - vec2(0.0, t * 0.7)));
   float n = fbm(p * scale * 1.35 + 1.7 * q + vec2(t * 1.6, t * 0.25));
 
-  vec3 top  = vec3(0.345, 0.388, 0.945);
-  vec3 mid  = vec3(0.545, 0.600, 1.000);
-  vec3 low  = vec3(0.905, 0.920, 1.000);
+  vec3 top  = vec3(0.000, 0.502, 0.373);
+  vec3 mid  = vec3(0.235, 0.690, 0.525);
+  vec3 low  = vec3(0.890, 0.965, 0.935);
   vec3 sky = mix(low, mid, smoothstep(0.05, 0.55, h));
   sky = mix(sky, top, smoothstep(0.5, 1.0, h));
 
@@ -70,7 +70,7 @@ void main() {
 
   float cloud = clamp(cumulus * 0.96 + cirrus, 0.0, 1.0);
   vec3 col = mix(sky, vec3(1.0), cloud);
-  col = mix(col, col * vec3(0.90, 0.92, 1.0), cumulus * (1.0 - n) * 0.55);
+  col = mix(col, col * vec3(0.90, 1.0, 0.95), cumulus * (1.0 - n) * 0.55);
   col += uLevel * 0.06 * cloud;
 
   gl_FragColor = vec4(col, 1.0);
