@@ -48,6 +48,7 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
 
   return (
     <aside className="trace" aria-label="Трассировка">
+      <button className="sheet-grip" onClick={onClose} tabIndex={-1} aria-hidden />
       <header className="trace__head">
         <div>
           <div className="trace__eyebrow">Трассировка</div>

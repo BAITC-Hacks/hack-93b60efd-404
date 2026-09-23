@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react';
 import type { Message } from '../state/types';
-import { RouteChip } from './RouteChip';
 import { IconAlert, IconHeadset, IconMic, HalykMark } from './icons';
 
 export const EXAMPLES = [
@@ -29,13 +28,11 @@ export function EmptyState({ onExample }: { onExample: (text: string) => void })
 
 interface ListProps {
   messages: Message[];
-  selectedId: string | null;
-  onSelect: (id: string) => void;
   onConfirm: (yes: boolean) => void;
   busy: boolean;
 }
 
-export function MessageList({ messages, selectedId, onSelect, onConfirm, busy }: ListProps) {
+export function MessageList({ messages, onConfirm, busy }: ListProps) {
   const endRef = useRef<HTMLDivElement>(null);
   const last = messages[messages.length - 1];
 
@@ -54,13 +51,7 @@ export function MessageList({ messages, selectedId, onSelect, onConfirm, busy }:
             </div>
           </div>
         ) : (
-          <AssistantMessage
-            key={m.id}
-            m={m}
-            selected={m.id === selectedId}
-            onSelect={() => onSelect(m.id)}
-            onConfirm={m.id === last?.id && !busy ? onConfirm : undefined}
-          />
+          <AssistantMessage key={m.id} m={m} onConfirm={m.id === last?.id && !busy ? onConfirm : undefined} />
         ),
       )}
       <div ref={endRef} />
@@ -68,21 +59,11 @@ export function MessageList({ messages, selectedId, onSelect, onConfirm, busy }:
   );
 }
 
-function AssistantMessage({
-  m,
-  selected,
-  onSelect,
-  onConfirm,
-}: {
-  m: Message;
-  selected: boolean;
-  onSelect: () => void;
-  onConfirm?: (yes: boolean) => void;
-}) {
+function AssistantMessage({ m, onConfirm }: { m: Message; onConfirm?: (yes: boolean) => void }) {
   const t = m.turn;
 
   return (
-    <div className={`msg msg--bot ${selected ? 'is-selected' : ''}`}>
+    <div className="msg msg--bot">
       <div className="msg__avatar">
         <HalykMark size={18} />
       </div>
@@ -118,8 +99,6 @@ function AssistantMessage({
                 <button className="btn" onClick={() => onConfirm(false)}>Отменить</button>
               </div>
             )}
-
-            <RouteChip m={m} selected={selected} onClick={onSelect} title="Открыть трассировку" />
           </>
         )}
       </div>

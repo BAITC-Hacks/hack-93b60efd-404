@@ -346,12 +346,7 @@ export default function App() {
             ) : (
               <MessageList
                 messages={messages}
-                selectedId={selected?.id ?? null}
                 busy={busy}
-                onSelect={(id) => {
-                  setSelectedId(id);
-                  setTraceOpen(true);
-                }}
                 onConfirm={(yes) => void handleTurn(yes ? 'Да, подтверждаю' : 'Нет, не нужно', 'text')}
               />
             )}
