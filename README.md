@@ -1,6 +1,15 @@
 # Saqta Voice
 
-> **Test the deployed app first:** [Open Saqta Voice](https://hackalem-137-74-166-29.sslip.io/). No local setup is needed—the frontend and API are already hosted. Guest login: `hackalem` / `SaqtaVoice-404-7E2M-9Q6P-2026`.
+> [!IMPORTANT]
+> **ATTENTION: Test the live demo first.** The app and API are already deployed; no local setup is needed.
+>
+> **Open the demo:** [Saqta Voice](https://hackalem-137-74-166-29.sslip.io/)
+>
+> **Demo URL:** <https://hackalem-137-74-166-29.sslip.io/>
+>
+> **Guest login:** `hackalem`
+>
+> **Guest password:** `SaqtaVoice-404-7E2M-9Q6P-2026`
 
 ### Voice support that follows the conversation.
 
