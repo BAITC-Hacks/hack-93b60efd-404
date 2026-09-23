@@ -247,6 +247,11 @@ class DialogueService:
             client_id = self.actions.execute("find_client", phone=values["phone"])["client_id"]
         except ActionError:
             return
+        if "city" in scenario["slots"]["required"] and "city" not in values:
+            client = next(
+                item for item in self.actions.data["clients"] if item["client_id"] == client_id
+            )
+            values["city"] = client["city"]
         if "claim_number" in scenario["slots"]["required"] and "claim_number" not in values:
             try:
                 claim = self.actions.execute("get_claim", client_id=client_id)

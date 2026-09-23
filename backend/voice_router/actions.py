@@ -368,10 +368,16 @@ class ActionExecutor:
 
     def _handle_book_appointment(self, *, policy_number: str, doctor_specialty: str,
                                  city: str, preferred_date: str) -> dict[str, Any]:
-        self._policy(policy_number)
-        clinic = next((p for p in self.knowledge["clinics"] if p["city"].casefold() == city.casefold()), None)
+        policy = self._policy(policy_number)
+        if policy["product"] != "dms":
+            raise ActionError("wrong_product", "Doctor appointments require a DMS policy")
+        clinic = next((p for p in self.knowledge["clinics"]
+                       if p["city"].casefold() == city.casefold()
+                       and doctor_specialty.casefold() in {
+                           specialty.casefold() for specialty in p["specialties"]
+                       }), None)
         if clinic is None:
-            raise ActionError("not_found", "No partner clinic in that city")
+            raise ActionError("not_found", "No partner clinic with that specialty in that city")
         self._record("book_appointment", policy_number=policy_number, specialty=doctor_specialty,
                      city=city, preferred_date=preferred_date)
         return {"clinic_name": clinic["name"], "slot_datetime": f"{preferred_date} (time pending confirmation)",

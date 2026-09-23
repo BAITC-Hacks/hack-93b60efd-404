@@ -104,6 +104,11 @@ class OpenAISlotExtractor:
             self.catalog.knowledge_base["products"]["travel"]["zones"]
             if "SC06" in scenario_ids else None
         )
+        clinic_specialties = (
+            sorted({specialty for clinic in self.catalog.knowledge_base["clinics"]
+                    for specialty in clinic["specialties"]})
+            if "SC21" in scenario_ids else None
+        )
         started = time.perf_counter()
         response = self.client.responses.parse(
             model=self.model,
@@ -122,6 +127,10 @@ class OpenAISlotExtractor:
                         "choose its travel_zone from the supplied official zone descriptions; "
                         "leave null when you cannot establish the zone. "
                         "Travel zones: " + json.dumps(travel_zones, ensure_ascii=False) + ". "
+                        "If a doctor specialty is spoken, normalize it to one exact "
+                        "official clinic specialty when semantically equivalent; otherwise "
+                        "leave it in the customer's wording. Official specialties: "
+                        + json.dumps(clinic_specialties, ensure_ascii=False) + ". "
                         "Allowed slots: " + json.dumps(descriptions, ensure_ascii=False)
                     ),
                 },
