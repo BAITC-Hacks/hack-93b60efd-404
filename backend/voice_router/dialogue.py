@@ -27,6 +27,9 @@ class SessionState:
     turn_count: int = 0
     pending_confirmation: dict[str, Any] | None = None
     executed_action_keys: set[str] = field(default_factory=set)
+    response_ms: float = 0
+    response_input_tokens: int = 0
+    response_output_tokens: int = 0
     lock: Lock = field(default_factory=Lock, repr=False)
 
 
@@ -75,6 +78,9 @@ class DialogueService:
             state.pending_confirmation = None
 
         started = time.perf_counter()
+        state.response_ms = 0
+        state.response_input_tokens = 0
+        state.response_output_tokens = 0
         result = self.router.route(
             transcript,
             history=state.history,
@@ -105,10 +111,17 @@ class DialogueService:
                 if extra_id not in state.pending_scenarios and extra_id != first_id:
                     state.pending_scenarios.append(extra_id)
             scenario = self.catalog.require_route(first_id)
-            extraction = self.slot_extractor.extract(transcript, route_ids)
-            state.slot_values.update(extraction.values)
-            response_language = extraction.response_language
-            state.response_language = response_language
+            needs_slots = any(
+                self.catalog.require_route(route_id)["slots"]["required"]
+                or self.catalog.require_route(route_id)["slots"]["optional"]
+                or self.catalog.require_route(route_id)["requires_identification"]
+                for route_id in route_ids
+            )
+            if needs_slots:
+                extraction = self.slot_extractor.extract(transcript, route_ids)
+                state.slot_values.update(extraction.values)
+                response_language = extraction.response_language
+                state.response_language = response_language
             missing = [
                 name for name in scenario["slots"]["required"] if name not in state.slot_values
             ]
@@ -128,7 +141,7 @@ class DialogueService:
                     ) + answer
             else:
                 answer, action_trace = self._answer_with_data(
-                    state, first_id, response_language, state.slot_values
+                    state, first_id, response_language, state.slot_values, transcript
                 )
                 state.active_completed = any(
                     action.get("status") == "executed" for action in action_trace
@@ -165,18 +178,20 @@ class DialogueService:
                 "model": result.model,
                 "router_ms": round(result.router_ms, 1),
                 "extractor_ms": round(extraction.extractor_ms, 1) if extraction else None,
+                "response_ms": round(state.response_ms, 1),
                 "total_ms": round(total_ms, 1),
                 "stt_ms": None,
                 "tts_first_audio_ms": None,
-                "input_tokens": result.input_tokens + (extraction.input_tokens if extraction else 0),
-                "output_tokens": result.output_tokens + (extraction.output_tokens if extraction else 0),
+                "input_tokens": result.input_tokens + (extraction.input_tokens if extraction else 0) + state.response_input_tokens,
+                "output_tokens": result.output_tokens + (extraction.output_tokens if extraction else 0) + state.response_output_tokens,
                 "rejected_slots": extraction.rejected if extraction else [],
                 "actions": action_trace,
             },
         }
 
     def _answer_with_data(
-        self, state: SessionState, scenario_id: str, language: str, values: dict[str, Any]
+        self, state: SessionState, scenario_id: str, language: str,
+        values: dict[str, Any], transcript: str,
     ) -> tuple[str, list[dict[str, Any]]]:
         scenario = self.catalog.require_route(scenario_id)
         identified_client_id = None
@@ -296,7 +311,10 @@ class DialogueService:
                 "SC31": "payments", "SC34": "app_help", "SC40": "policy_terms"}[scenario_id]}
         elif action_name == "transfer_to_operator":
             params = {"queue": {"SC10": "corporate", "SC11": "emergency", "SC15": "travel_assistance"}.get(scenario_id, "general"),
-                      "summary": state.history[-1]["content"] if state.history else scenario["name"]}
+                      "summary": " | ".join(
+                          [entry["content"] for entry in state.history[-6:] if entry["role"] == "client"]
+                          + [transcript]
+                      )[-700:]}
 
         action_key = self._action_key(action_name, params)
         if action_key in state.executed_action_keys:
@@ -322,20 +340,12 @@ class DialogueService:
         if self._has_side_effect(action_name):
             state.executed_action_keys.add(action_key)
 
-        if scenario_id == "SC23":
-            clinics = ", ".join(
-                f"{item['name']} ({item['address']})" for item in result["clinics"]
-            )
-            answer = (
-                f"В вашем городе есть партнёрские клиники: {clinics}."
-                if language == "ru"
-                else f"Қалаңыздағы серіктес клиникалар: {clinics}."
-            )
-        elif scenario_id == "SC25" and result["status"] == "expired":
-            answer = (
-                f"Срок полиса {result['policy_number']} истёк {result['end_date']}."
-                if language == "ru"
-                else f"{result['policy_number']} полисінің мерзімі {result['end_date']} күні аяқталды."
+        if not self._has_side_effect(action_name):
+            answer, state.response_ms, state.response_input_tokens, state.response_output_tokens = (
+                self.router.compose_answer(
+                    transcript=transcript, scenario=scenario, language=language,
+                    facts=result, history=state.history,
+                )
             )
         elif action_name == "transfer_to_operator":
             answer = (f"Запрос {result['handoff_id']} записан для оператора в локальной системе. Живое соединение пока не подключено."
@@ -346,14 +356,6 @@ class DialogueService:
         elif action_name in {"resend_documents", "request_document"}:
             answer = ("Запрос записан локально, но отправка документов сейчас не подключена."
                 if language == "ru" else "Сұрау жергілікті жүйеге жазылды, бірақ құжат жіберу қосылмаған.")
-        elif action_name == "kb_lookup":
-            answer = self._knowledge_answer(scenario_id, language, values, result["answer"])
-        elif scenario_id == "SC30":
-            answer = (f"В данных кейса платеж: {result['payment_status']}, сумма {result['amount']} тенге."
-                if language == "ru" else f"Кейс деректеріндегі төлем: {result['payment_status']}, сома {result['amount']} теңге.")
-        elif scenario_id == "SC32":
-            answer = (f"Класс бонус-малус: {result['bm_class']}." if language == "ru"
-                else f"Бонус-малус класы: {result['bm_class']}.")
         else:
             try:
                 answer = scenario["responses"][language]["closing"].format(**result)
@@ -375,28 +377,6 @@ class DialogueService:
             "create_callback", "create_complaint", "report_fraud", "transfer_to_operator",
             "resend_documents", "request_document",
         }
-
-    def _knowledge_answer(self, scenario_id: str, language: str,
-                          values: dict[str, Any], answer: Any) -> str:
-        if scenario_id == "SC18":
-            documents = answer.get(values["product_type"])
-            if documents:
-                return ("Для заявления нужны: " if language == "ru" else "Өтінішке керек құжаттар: ") + ", ".join(documents) + "."
-        if scenario_id == "SC31":
-            methods = ", ".join(answer["methods"])
-            return (f"Способы оплаты: {methods}. Рассрочка зависит от продукта."
-                if language == "ru" else f"Төлеу жолдары: {methods}. Бөліп төлеу өнімге байланысты.")
-        if scenario_id == "SC34":
-            return ("Войдите по номеру телефона и одноразовому SMS-коду. Если код не пришёл, проверьте номер и повторите через 60 секунд."
-                if language == "ru" else "Телефон нөмірі және бір реттік SMS-кодпен кіріңіз. Код келмесе, нөмірді тексеріп, 60 секундтан кейін қайталаңыз.")
-        if scenario_id == "SC24":
-            return ("Электронная карта ДМС находится в приложении, раздел «Мои полисы». SMS-отправка здесь не подключена."
-                if language == "ru" else "ДМС электрондық картасы қолданбадағы «Менің полистерім» бөлімінде. SMS жіберу мұнда қосылмаған.")
-        if scenario_id == "SC09":
-            return ("По ДМС есть пакеты Basic и Comfort. Стоимость для частных клиентов — 180 000 и 320 000 тенге в год."
-                if language == "ru" else "ДМС Basic және Comfort пакеттері бар. Жеке клиенттер үшін жылына 180 000 және 320 000 теңге.")
-        return ("Условия есть в базе знаний кейса; уточните продукт и конкретный вопрос, чтобы не предполагать покрытие."
-            if language == "ru" else "Шарттар кейстің білім базасында бар; қамтуды болжамау үшін өнім мен нақты сұрақты айтыңыз.")
 
     def _resolve_confirmation(self, state: SessionState, transcript: str,
                               decision: str, reason: str, model_ms: float,

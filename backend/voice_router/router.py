@@ -26,6 +26,10 @@ class ConfirmationDecision(BaseModel):
     reason: str = Field(description="Short explanation grounded in the customer's actual reply")
 
 
+class SpokenAnswer(BaseModel):
+    answer_text: str = Field(description="One or two short, voice-friendly sentences in the requested language")
+
+
 @dataclass(frozen=True)
 class RouteResult:
     decision: RouteDecision
@@ -166,5 +170,47 @@ class OpenAIRouter:
             raise RuntimeError("OpenAI did not return a parsed confirmation decision")
         usage = response.usage
         return parsed, (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)
+
+    def compose_answer(
+        self, *, transcript: str, scenario: dict, language: str,
+        facts: dict, history: list[dict[str, str]],
+    ) -> tuple[str, float, int, int]:
+        """Speak naturally from verified case facts, never from model memory."""
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "You are Saqta Insurance's AI voice assistant for a fictional case. "
+                    "Use only the supplied verified facts and scenario; do not invent prices, "
+                    "coverage, legal rules, bookings, sent messages, or operator connections. "
+                    "Answer the customer's actual question in one or two short spoken sentences. "
+                    "Use the requested language (ru or kk), translate factual English labels "
+                    "naturally, and ask one precise follow-up only if the facts truly do not "
+                    "answer the question. Do not say an action was performed unless its "
+                    "verified result says so. Do not expose internal scenario IDs. "
+                    "The voice is AI-generated, not a human operator."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "customer_utterance": transcript,
+                    "recent_history": history[-4:],
+                    "language": language,
+                    "scenario_name": scenario["name"],
+                    "scenario_description": scenario["description"],
+                    "verified_facts": facts,
+                    "style_reference": scenario["responses"][language],
+                }, ensure_ascii=False)},
+            ],
+            text_format=SpokenAnswer,
+            max_output_tokens=220,
+        )
+        parsed = response.output_parsed
+        if parsed is None or not parsed.answer_text.strip():
+            raise RuntimeError("OpenAI did not return a grounded spoken answer")
+        usage = response.usage
+        return parsed.answer_text.strip(), (time.perf_counter() - started) * 1000, (
             usage.input_tokens if usage else 0
         ), (usage.output_tokens if usage else 0)
