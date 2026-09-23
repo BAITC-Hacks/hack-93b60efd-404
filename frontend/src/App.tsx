@@ -20,7 +20,8 @@ function extendTranscript(current: string, incoming: string): string {
   if (!current) return incoming;
   if (incoming.startsWith(current)) return incoming;
   if (current.endsWith(incoming)) return current;
-  return current + incoming;
+  const boundary = /[.!?;:]\s*$/.test(current) && /^\S/.test(incoming) ? ' ' : '';
+  return current + boundary + incoming;
 }
 
 export default function App() {

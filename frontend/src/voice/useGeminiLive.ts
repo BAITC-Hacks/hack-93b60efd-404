@@ -113,6 +113,10 @@ export function useGeminiLive({ onInput, onOutput, onTool, onRoute }: Options) {
         audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
       });
       streamRef.current = stream;
+      const microphoneName = stream.getAudioTracks()[0]?.label ?? '';
+      if (/fake (default )?audio input/i.test(microphoneName)) {
+        throw new Error('В этом тестовом окне подключён поддельный микрофон. Откройте сайт в обычном Chrome или Edge.');
+      }
       const token = await createGeminiToken();
       if (!activeRef.current) return;
       const ai = new GoogleGenAI({ apiKey: token, httpOptions: { apiVersion: 'v1beta' } });
