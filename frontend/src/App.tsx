@@ -229,6 +229,7 @@ export default function App() {
 
   const sendUserText = (text: string) => {
     if (!session) {
+      setMode('chat');
       void handleTurn(text, 'text');
       return;
     }
