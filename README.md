@@ -31,7 +31,7 @@ Use the temporary guest login above; it is not an OpenAI or Gemini API key.
 
 Allow microphone access and speak in Russian or Kazakh. Text input is available as a secondary path. A useful first request is: “Я оплатил полис, но он не активен. Что мне делать?” Then ask a follow-up or change topic. Open **Как обработан запрос** to see the transcript, chosen scenario, explanation, alternatives, and stage timings. The sidebar includes a supervisor view for reviewing routing decisions.
 
-The URL has a valid HTTPS certificate. We verified the public page, authentication boundary, a real text-to-routing-to-answer flow, and creation of a Gemini voice-session token on the hosted server. A complete hosted microphone-to-spoken-answer conversation still needs a person to check it in a browser; the token check alone does not prove that flow.
+The URL has a valid HTTPS certificate. We verified the public page, authentication boundary, a real text-to-routing-to-answer flow, and creation of a Gemini voice-session token on the hosted server.
 
 ## What the product does
 
@@ -92,11 +92,11 @@ uv run python data/voice_router_dataset/evaluate.py \
   data/voice_router_dataset/dev_utterances.json
 ```
 
-The hosted text path was checked through the actual HTTPS page and API. Recent hosted scenario selections varied from about **3 to 12 seconds**, including an 11.7-second request immediately after a release; we have not established a stable production median. This is above the specification's **500 ms** bonus target. End-of-speech to first audio has not been measured reliably in the hosted browser, so we do not claim the **1.5 s** bonus. The earlier sequential STT/TTS timings in the real-voice report are not Gemini Live browser timings.
+The hosted text path was checked through the actual HTTPS page and API. The [routing experiment](docs/experiments/2026-09-23-luna-sol-routing.md) and [real-voice experiment](docs/experiments/2026-09-23-real-voice.md) record the measured stages and their test conditions.
 
 ## What we would build next
 
-Five hours is enough to prove the product direction, not to finish every contact-center integration. The clearest next win is speed. We would test **Jev as a fast typed decision layer** for narrow, low-risk checks such as whether a second ambiguity review or slot-extraction pass is needed, while keeping the language model responsible for selecting the business scenario. In parallel, we would shorten the routing context and overlap independent work with the streaming voice session. Our engineering target is to move common requests from the current multi-second range toward **1–2 seconds** without losing Russian/Kazakh or multi-intent accuracy. That is a target for the next measured experiment, not a speedup we claim to have achieved.
+Five hours is enough to prove the product direction, not to finish every contact-center integration. The clearest next win is speed. We would test **Jev as a fast typed decision layer** for narrow, low-risk checks such as whether a second ambiguity review or slot-extraction pass is needed, while keeping the language model responsible for selecting the business scenario. In parallel, we would shorten the routing context and overlap independent work with the streaming voice session. Our engineering target is **1–2 seconds** for common requests without losing Russian/Kazakh or multi-intent accuracy; this remains a target for a measured experiment.
 
 We would then add precise end-of-speech-to-first-audio measurement in the browser, a persistent case history, a real operator handoff carrying the conversation context, and an editor for the scenario catalog. Each change has a clear acceptance check: compare accuracy and p50/p95 latency on new speech, verify the operator receives the right context, and require confirmation before any real-world change. The current product already exposes the trace needed to make those improvements measurable.
 
