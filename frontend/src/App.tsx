@@ -32,7 +32,7 @@ export default function App() {
   const [muted, setMuted] = useState(false);
   const [speaking, setSpeaking] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [traceOpen, setTraceOpen] = useState(false);
+  const [traceOpen, setTraceOpen] = useState(() => window.innerWidth >= 1100 && window.innerHeight >= 620);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(true);

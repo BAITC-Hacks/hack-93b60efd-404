@@ -58,7 +58,7 @@ void main() {
 
   vec3 top  = vec3(0.000, 0.502, 0.373);
   vec3 mid  = vec3(0.235, 0.690, 0.525);
-  vec3 low  = vec3(0.890, 0.965, 0.935);
+  vec3 low  = mix(vec3(0.890, 0.965, 0.935), vec3(0.780, 0.905, 0.860), uOrb);
   vec3 sky = mix(low, mid, smoothstep(0.05, 0.55, h));
   sky = mix(sky, top, smoothstep(0.5, 1.0, h));
 
