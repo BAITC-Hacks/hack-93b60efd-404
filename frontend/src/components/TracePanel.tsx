@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import type { Message, Review } from '../state/types';
-import { E2E_TARGET_MS, LANG_LABEL, ROUTE_TARGET_MS, ms, plural } from '../lib/format';
+import { E2E_TARGET_MS, LANG_LABEL, ROUTE_TARGET_MS, ms, plural, scenarioLabel } from '../lib/format';
 import { LatencyBar } from './LatencyBar';
 import { RouteChip } from './RouteChip';
 import { HalykMark, IconCheck, IconClose, IconMic } from './icons';
@@ -96,7 +96,7 @@ function TurnDetails({ message, onReview }: { message: Message; onReview: (revie
         <h3>Выбранный сценарий</h3>
         {turn.route_details.map((route) => (
           <div className="picked" key={route.id}>
-            <div className="picked__row"><b>{route.name}</b></div>
+            <div className="picked__row"><b>{scenarioLabel(route, turn.language)}</b></div>
           </div>
         ))}
         <div className="kv">
@@ -105,11 +105,13 @@ function TurnDetails({ message, onReview }: { message: Message; onReview: (revie
         </div>
       </section>
       <section className="tsec"><h3>Почему</h3><p className="reason">{trace.reason.replace(/\b[A-Z]{2}\d{2}\b/g, (id) =>
-        [...turn.route_details, ...trace.alternative_details].find((route) => route.id === id)?.name ?? 'другой сценарий')}</p></section>
+        scenarioLabel([...turn.route_details, ...trace.alternative_details].find((route) => route.id === id) ?? {
+          id, name: 'другой сценарий', description: '', priority: '',
+        }, turn.language))}</p></section>
       {trace.alternative_details.length > 0 && <section className="tsec">
         <h3>Альтернативы</h3>
         <ul className="alts">{trace.alternative_details.map((route) =>
-          <li key={route.id}>{route.name}</li>)}</ul>
+          <li key={route.id}>{scenarioLabel(route, turn.language)}</li>)}</ul>
       </section>}
       <section className="tsec">
         <h3>Задержка по этапам</h3>

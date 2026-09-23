@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { Conversation, Message } from '../state/types';
-import { E2E_TARGET_MS, ROUTE_TARGET_MS, ms, pct, plural, quantile } from '../lib/format';
+import { E2E_TARGET_MS, ROUTE_TARGET_MS, ms, pct, plural, quantile, scenarioLabel } from '../lib/format';
 
 interface Row { conv: Conversation; msg: Message; user?: Message }
 interface Props {
@@ -42,7 +42,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
   const byScenario = new Map<string, { name: string; count: number; wrong: number }>();
   for (const row of rows) {
     for (const route of row.msg.turn!.route_details) {
-      const value = byScenario.get(route.id) ?? { name: route.name, count: 0, wrong: 0 };
+      const value = byScenario.get(route.id) ?? { name: scenarioLabel(route, row.msg.turn!.language), count: 0, wrong: 0 };
       value.count += 1;
       if (row.msg.review?.verdict === 'wrong') value.wrong += 1;
       byScenario.set(route.id, value);
@@ -90,7 +90,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
           <th>Сценарий</th><th>Реплик</th><th>Ошибок по оценке</th>
         </tr></thead><tbody>
           {scenarios.map(([id, value]) => <tr key={id}>
-            <td><div className="tbl__name">{id} · {value.name}</div>
+            <td><div className="tbl__name">{value.name}</div>
               <div className="tbl__bar"><span style={{ width: (value.count / maxCount * 100) + '%' }} /></div></td>
             <td className="num">{value.count}</td>
             <td className={'num ' + (value.wrong ? 'bad' : '')}>{value.wrong || '—'}</td>
@@ -105,7 +105,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
               <span className="doubts__quote">«{row.user?.text ?? 'Реплика клиента'}»</span>
               <span className="doubts__meta">
                 {row.msg.review?.verdict === 'wrong' && <b className="bad">Отмечена ошибка</b>}
-                <span>{row.msg.turn!.route.join(' + ')}</span>
+                <span>{row.msg.turn!.route_details.map((route) => scenarioLabel(route, row.msg.turn!.language)).join(' + ')}</span>
                 <span>{ms(row.msg.turn!.trace.router_ms)}</span>
               </span>
             </button>

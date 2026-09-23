@@ -1,4 +1,4 @@
-import type { Language } from '../api/types';
+import type { Language, ScenarioRef } from '../api/types';
 import type { Message } from '../state/types';
 
 export const ROUTE_TARGET_MS = 500;
@@ -17,6 +17,15 @@ export function plural(n: number, one: string, few: string, many: string) {
 
 export const LANG_LABEL: Record<Language, string> = { ru: 'Русский', kk: 'Қазақша' };
 export const LANG_SHORT: Record<Language, string> = { ru: 'RU', kk: 'KZ' };
+
+export function scenarioLabel(route: ScenarioRef, language: Language): string {
+  const system: Record<string, Record<Language, string>> = {
+    SYS_UNCLEAR: { ru: 'Нужно уточнение', kk: 'Нақтылау қажет' },
+    SYS_OUT_OF_SCOPE: { ru: 'Вне страховых услуг', kk: 'Сақтандыру қызметінен тыс' },
+    SYS_GOODBYE: { ru: 'Завершение разговора', kk: 'Әңгіме аяқталды' },
+  };
+  return system[route.id]?.[language] ?? route.name;
+}
 
 export type StageKey = 'stt' | 'route' | 'llm' | 'net' | 'tts';
 
