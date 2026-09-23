@@ -14,6 +14,10 @@ The script installs locked Python and frontend dependencies, starts the backend 
 
 The app does **not** switch to a mock if an upstream service is unavailable. It shows an error. API keys remain on the local server; the browser receives only a short-lived Gemini Live token.
 
+## OVH deployment
+
+The tracked [Compose service](deploy/compose.yml) runs the SHA-tagged Docker image built from this repository behind the existing Traefik HTTPS ingress. It exposes no host port. Its server-only `/opt/hackalem-voice-router/runtime.env` must contain `OPENAI_API_KEY`, `GEMINI_API_KEY`, `VOICE_ROUTER_BASIC_AUTH` (`username:password`), and `VOICE_ROUTER_CORS_ORIGIN`. Set `HACKALEM_IMAGE_TAG` to the full Git SHA before `docker compose -f deploy/compose.yml up -d`; keep the previous image for rollback. The public health endpoint is `/api/health`; all conversation and frontend endpoints require HTTP Basic authentication.
+
 ## System and evidence
 
 Gemini 3.8 Live handles streaming microphone input, natural RU/KK dialogue, spoken output, and interruption. Insurance requests call the backend through a Live tool. OpenAI `gpt-6-luna` selects an ordered route from the 40 official scenarios using dialogue context and extracts the required values. Case actions run under approval rules and return verified results to Gemini Live for speech. A backend session holds at most ten customer turns. The browser displays the real route trace in human-readable form. The separate HTTP audio endpoint remains available for backend diagnostics. The Jev extraction gate was removed after its external call caused intermittent request failures; it is not part of the current request path.

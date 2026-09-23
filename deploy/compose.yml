@@ -1,0 +1,30 @@
+services:
+  voice-router:
+    image: hackalem-voice-router:${HACKALEM_IMAGE_TAG:?Set HACKALEM_IMAGE_TAG to the full Git SHA}
+    restart: unless-stopped
+    env_file:
+      - /opt/hackalem-voice-router/runtime.env
+    networks:
+      - coolify
+    cpus: "1.5"
+    mem_limit: 1g
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=coolify
+      - traefik.http.routers.hackalem-voice-http.rule=Host(`hackalem-137-74-166-29.sslip.io`)
+      - traefik.http.routers.hackalem-voice-http.entrypoints=http
+      - traefik.http.routers.hackalem-voice-http.middlewares=redirect-to-https
+      - traefik.http.routers.hackalem-voice.rule=Host(`hackalem-137-74-166-29.sslip.io`)
+      - traefik.http.routers.hackalem-voice.entrypoints=https
+      - traefik.http.routers.hackalem-voice.tls=true
+      - traefik.http.routers.hackalem-voice.tls.certresolver=letsencrypt
+      - traefik.http.services.hackalem-voice.loadbalancer.server.port=8000
+
+networks:
+  coolify:
+    external: true
