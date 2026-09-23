@@ -6,7 +6,7 @@ Case 2 of HackAlem AI: a Russian/Kazakh voice assistant for the fictional Saqta 
 
 ## Implemented capabilities
 
-None yet. See the [backend implementation plan](docs/implementation-plan.md) and [experiment protocol](docs/experiments/README.md).
+None yet. See the [Russian functional specification and backend implementation plan](docs/VOICE_ROUTER_PLAN_RU.md) and [experiment protocol](docs/experiments/README.md).
 
 ## Main flow
 
@@ -14,7 +14,7 @@ Planned: microphone → transcript → context-aware LLM route → permitted dat
 
 ## Architecture and technology
 
-Not finalized. The backend will own dialogue state, routing, action validation, and trace events; another teammate owns the frontend. Model and audio-transport decisions will follow measured experiments.
+Not finalized. Nikita and Altinay jointly own backend work: dialogue state, routing, action validation, voice integration, and trace events. Frontend implementation is outside this repository plan. Model and audio-transport decisions will follow measured experiments.
 
 ## Requirements, install, and run
 
