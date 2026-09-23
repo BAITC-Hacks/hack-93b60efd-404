@@ -1,0 +1,523 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "queues": [
+    "operator_general",
+    "claims_team",
+    "medical_assistance_24_7",
+    "corporate_sales",
+    "complaints_team",
+    "security_team"
+  ],
+  "error_format": {
+    "error": {
+      "code": "not_found",
+      "message": "Client with phone +77010000099 not found"
+    }
+  },
+  "error_codes": {
+    "not_found": "No record matches the input (unknown phone, IIN, policy, claim, plate or payment).",
+    "invalid_input": "Input does not match the slot format or allowed values.",
+    "policy_inactive": "Policy is expired or not yet active, the operation is not allowed.",
+    "not_eligible": "Product rules do not allow it (e.g. car too old for CASCO, traveler over 75).",
+    "not_covered": "The service is not covered by the client's DMS package.",
+    "no_availability": "No free slots for the requested date; return the nearest alternatives.",
+    "already_done": "The operation was already performed (e.g. policy already cancelled).",
+    "service_unavailable": "Mock backend is temporarily unavailable; retry once, then hand off."
+  },
+  "error_handling": [
+    "not_found / invalid_input: re-ask the slot once, then offer another identifier or an operator.",
+    "policy_inactive / not_eligible / not_covered: explain the reason in one sentence and offer the nearest valid option.",
+    "no_availability: offer the nearest free slots.",
+    "service_unavailable: retry once, then hand off with context."
+  ],
+  "actions": [
+    {
+      "name": "find_client",
+      "description": "Find a client by phone or IIN",
+      "inputs": [
+        "phone|iin"
+      ],
+      "outputs": [
+        "client_id",
+        "full_name"
+      ],
+      "errors": [
+        "not_found",
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "get_policies",
+      "description": "List client policies",
+      "inputs": [
+        "client_id"
+      ],
+      "outputs": [
+        "policies"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "get_policy",
+      "description": "Get a policy by number or vehicle plate",
+      "inputs": [
+        "policy_number|vehicle_plate"
+      ],
+      "outputs": [
+        "policy_number",
+        "product",
+        "status",
+        "end_date"
+      ],
+      "errors": [
+        "not_found",
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "get_bm_class",
+      "description": "Get bonus-malus class by IIN (unknown IIN -> class 3)",
+      "inputs": [
+        "iin"
+      ],
+      "outputs": [
+        "bm_class"
+      ],
+      "errors": [
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "calc_ogpo_price",
+      "description": "Calculate OGPO premium",
+      "inputs": [
+        "region",
+        "vehicle_type",
+        "drivers_iin"
+      ],
+      "outputs": [
+        "price"
+      ],
+      "errors": [
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "calc_casco_price",
+      "description": "Calculate CASCO premium",
+      "inputs": [
+        "car_value",
+        "car_year",
+        "franchise"
+      ],
+      "outputs": [
+        "price"
+      ],
+      "errors": [
+        "invalid_input",
+        "not_eligible"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "calc_travel_price",
+      "description": "Calculate travel premium",
+      "inputs": [
+        "trip_country",
+        "trip_start",
+        "trip_end",
+        "travelers_count",
+        "traveler_max_age"
+      ],
+      "outputs": [
+        "price",
+        "zone",
+        "coverage"
+      ],
+      "errors": [
+        "invalid_input",
+        "not_eligible"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "calc_property_price",
+      "description": "Calculate property premium",
+      "inputs": [
+        "property_type",
+        "sum_insured"
+      ],
+      "outputs": [
+        "price"
+      ],
+      "errors": [
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "calc_accident_price",
+      "description": "Calculate accident premium",
+      "inputs": [
+        "sum_insured"
+      ],
+      "outputs": [
+        "price"
+      ],
+      "errors": [
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "create_policy",
+      "description": "Issue a policy and send a payment link by SMS",
+      "inputs": [
+        "product_type",
+        "phone"
+      ],
+      "outputs": [
+        "policy_number"
+      ],
+      "errors": [
+        "invalid_input",
+        "service_unavailable"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "renew_policy",
+      "description": "Renew an expiring policy",
+      "inputs": [
+        "policy_number"
+      ],
+      "outputs": [
+        "policy_number",
+        "price"
+      ],
+      "errors": [
+        "not_found",
+        "not_eligible"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "update_policy",
+      "description": "Change a policy (add driver, change vehicle)",
+      "inputs": [
+        "policy_number"
+      ],
+      "outputs": [
+        "extra_premium"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive",
+        "invalid_input"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "cancel_policy",
+      "description": "Terminate a policy and calculate refund",
+      "inputs": [
+        "policy_number",
+        "cancel_reason"
+      ],
+      "outputs": [
+        "refund_amount"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive",
+        "already_done",
+        "not_eligible"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "create_claim",
+      "description": "Register a claim",
+      "inputs": [
+        "product_type",
+        "incident_date",
+        "incident_description"
+      ],
+      "outputs": [
+        "claim_number"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive",
+        "invalid_input"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "get_claim",
+      "description": "Get claim status",
+      "inputs": [
+        "claim_number|client_id"
+      ],
+      "outputs": [
+        "claim_number",
+        "status",
+        "next_step"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "create_dispute",
+      "description": "Register a written disagreement with a claim decision",
+      "inputs": [
+        "claim_number",
+        "complaint_text"
+      ],
+      "outputs": [
+        "ticket_id"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "book_inspection",
+      "description": "Book a vehicle damage inspection",
+      "inputs": [
+        "claim_number",
+        "city",
+        "preferred_date"
+      ],
+      "outputs": [
+        "slot_datetime",
+        "address"
+      ],
+      "errors": [
+        "not_found",
+        "no_availability"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "book_appointment",
+      "description": "Book a doctor appointment under DMS",
+      "inputs": [
+        "policy_number",
+        "doctor_specialty",
+        "city",
+        "preferred_date"
+      ],
+      "outputs": [
+        "clinic_name",
+        "slot_datetime"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive",
+        "not_covered",
+        "no_availability"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "check_coverage",
+      "description": "Check if a service is covered by the DMS package",
+      "inputs": [
+        "policy_number",
+        "service_name"
+      ],
+      "outputs": [
+        "covered",
+        "note"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "list_clinics",
+      "description": "List partner clinics",
+      "inputs": [
+        "city"
+      ],
+      "outputs": [
+        "clinics"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "resend_documents",
+      "description": "Resend policy documents",
+      "inputs": [
+        "policy_number"
+      ],
+      "outputs": [
+        "sent_to"
+      ],
+      "errors": [
+        "not_found",
+        "policy_inactive"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "check_payment",
+      "description": "Check a payment",
+      "inputs": [
+        "client_id",
+        "payment_date"
+      ],
+      "outputs": [
+        "payment_status",
+        "amount"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "update_contact",
+      "description": "Change client contact details",
+      "inputs": [
+        "client_id",
+        "contact_field",
+        "new_value"
+      ],
+      "outputs": [],
+      "errors": [
+        "not_found",
+        "invalid_input"
+      ],
+      "irreversible": true
+    },
+    {
+      "name": "request_document",
+      "description": "Send a certificate or document copy by email",
+      "inputs": [
+        "policy_number",
+        "document_type",
+        "email"
+      ],
+      "outputs": [
+        "sent_to"
+      ],
+      "errors": [
+        "not_found",
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "get_offices",
+      "description": "Get office address and hours",
+      "inputs": [
+        "city"
+      ],
+      "outputs": [
+        "address",
+        "hours"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "kb_lookup",
+      "description": "Answer from knowledge_base.json",
+      "inputs": [
+        "topic"
+      ],
+      "outputs": [
+        "answer"
+      ],
+      "errors": [
+        "not_found"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "send_sms",
+      "description": "Send an SMS with a link or instructions",
+      "inputs": [
+        "phone"
+      ],
+      "outputs": [],
+      "errors": [
+        "invalid_input",
+        "service_unavailable"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "create_callback",
+      "description": "Schedule a callback",
+      "inputs": [
+        "phone",
+        "callback_time"
+      ],
+      "outputs": [],
+      "errors": [
+        "invalid_input"
+      ],
+      "irreversible": false
+    },
+    {
+      "name": "create_complaint",
+      "description": "Register a service complaint",
+      "inputs": [
+        "complaint_text"
+      ],
+      "outputs": [
+        "ticket_id"
+      ],
+      "errors": [],
+      "irreversible": false
+    },
+    {
+      "name": "report_fraud",
+      "description": "Register a fraud report",
+      "inputs": [
+        "fraud_details"
+      ],
+      "outputs": [
+        "ticket_id"
+      ],
+      "errors": [],
+      "irreversible": false
+    },
+    {
+      "name": "transfer_to_operator",
+      "description": "Transfer the call to a human queue with context summary",
+      "inputs": [
+        "queue"
+      ],
+      "outputs": [],
+      "errors": [
+        "service_unavailable"
+      ],
+      "irreversible": false
+    }
+  ]
+}

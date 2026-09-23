@@ -1,0 +1,377 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "defaults": {
+    "unknown_iin_bm_class": "3"
+  },
+  "clients": [
+    {
+      "client_id": "C001",
+      "full_name": "Arman Tulegenov",
+      "phone": "+77010000001",
+      "iin": "850314300121",
+      "city": "Almaty",
+      "email": "arman.t@mail.example",
+      "address": "Almaty, Satpayev St 12, apt 45",
+      "bm_class": "7",
+      "preferred_language": "ru"
+    },
+    {
+      "client_id": "C002",
+      "full_name": "Aigerim Bekova",
+      "phone": "+77010000002",
+      "iin": "920607400233",
+      "city": "Astana",
+      "email": "aigerim.b@mail.example",
+      "address": "Astana, Kabanbay Batyr Ave 11, apt 8",
+      "bm_class": "3",
+      "preferred_language": "kk"
+    },
+    {
+      "client_id": "C003",
+      "full_name": "Yerlan Omarov",
+      "phone": "+77010000003",
+      "iin": "890922300345",
+      "city": "Shymkent",
+      "email": "yerlan.o@mail.example",
+      "address": "Shymkent, Respublika Ave 5, apt 30",
+      "bm_class": "1",
+      "preferred_language": "ru"
+    },
+    {
+      "client_id": "C004",
+      "full_name": "Natalia Smirnova",
+      "phone": "+77010000004",
+      "iin": "780115400457",
+      "city": "Almaty",
+      "email": "natalia.s@mail.example",
+      "address": "Almaty, Zheltoksan St 88, apt 17",
+      "bm_class": "3",
+      "preferred_language": "ru"
+    },
+    {
+      "client_id": "C005",
+      "full_name": "Daniyar Kaliyev",
+      "phone": "+77010000005",
+      "iin": "950430300569",
+      "city": "Karaganda",
+      "email": "daniyar.k@mail.example",
+      "address": "Karaganda, Bukhar Zhyrau Ave 20, apt 3",
+      "bm_class": "4",
+      "preferred_language": "kk"
+    },
+    {
+      "client_id": "C006",
+      "full_name": "Madina Akhmetova",
+      "phone": "+77010000006",
+      "iin": "900218400671",
+      "city": "Astana",
+      "email": "madina.a@mail.example",
+      "address": "Astana, Syganak St 7, apt 52",
+      "bm_class": "3",
+      "preferred_language": "kk"
+    },
+    {
+      "client_id": "C007",
+      "full_name": "Sergey Popov",
+      "phone": "+77010000007",
+      "iin": "820705300783",
+      "city": "Pavlodar",
+      "email": "sergey.p@mail.example",
+      "address": "Pavlodar, Toraigyrov St 60, apt 9",
+      "bm_class": "6",
+      "preferred_language": "ru"
+    },
+    {
+      "client_id": "C008",
+      "full_name": "Alibek Sarsenbayev",
+      "phone": "+77010000008",
+      "iin": "870911300895",
+      "city": "Almaty",
+      "email": "alibek.s@mail.example",
+      "address": "Almaty, Abai Ave 44, apt 12",
+      "bm_class": "4",
+      "preferred_language": "kk"
+    },
+    {
+      "client_id": "C009",
+      "full_name": "Rustem Ismailov",
+      "phone": "+77010000009",
+      "iin": "880126300907",
+      "city": "Almaty",
+      "email": "rustem.i@mail.example",
+      "address": "Almaty, Gagarin Ave 210, apt 71",
+      "bm_class": "10",
+      "preferred_language": "ru"
+    },
+    {
+      "client_id": "C010",
+      "full_name": "Kamila Utepova",
+      "phone": "+77010000010",
+      "iin": "930503401019",
+      "city": "Atyrau",
+      "email": "kamila.u@mail.example",
+      "address": "Atyrau, Azattyk Ave 33, apt 4",
+      "bm_class": "3",
+      "preferred_language": "kk"
+    },
+    {
+      "client_id": "C011",
+      "full_name": "Nurlan Zhumabekov",
+      "phone": "+77010000011",
+      "iin": "860219300112",
+      "city": "Astana",
+      "email": "nurlan.zh@mail.example",
+      "address": "Astana, Kenesary St 18, apt 60",
+      "bm_class": "5",
+      "preferred_language": "kk"
+    }
+  ],
+  "policies": [
+    {
+      "policy_number": "SQ-OGPO-104501",
+      "client_id": "C001",
+      "product": "ogpo",
+      "start_date": "2026-03-15",
+      "end_date": "2027-03-14",
+      "premium": 30400,
+      "details": {
+        "vehicle_plate": "777ABC02",
+        "vehicle": "Toyota Camry 2019",
+        "vehicle_type": "car",
+        "drivers_iin": [
+          "850314300121"
+        ],
+        "term_months": 12
+      }
+    },
+    {
+      "policy_number": "SQ-CASCO-204118",
+      "client_id": "C001",
+      "product": "casco",
+      "start_date": "2026-03-15",
+      "end_date": "2027-03-14",
+      "premium": 540000,
+      "details": {
+        "vehicle_plate": "777ABC02",
+        "vehicle": "Toyota Camry 2019",
+        "car_year": 2019,
+        "car_value": 12000000,
+        "package": "Standard",
+        "franchise": 50000
+      }
+    },
+    {
+      "policy_number": "SQ-DMS-604220",
+      "client_id": "C002",
+      "product": "dms",
+      "start_date": "2026-01-01",
+      "end_date": "2026-12-31",
+      "premium": null,
+      "details": {
+        "package": "Comfort",
+        "type": "corporate",
+        "employer": "Nomad Logistics LLP"
+      }
+    },
+    {
+      "policy_number": "SQ-OGPO-102850",
+      "client_id": "C003",
+      "product": "ogpo",
+      "start_date": "2025-09-30",
+      "end_date": "2026-09-29",
+      "premium": 31200,
+      "details": {
+        "vehicle_plate": "222ABC17",
+        "vehicle": "Hyundai Accent 2018",
+        "vehicle_type": "car",
+        "drivers_iin": [
+          "890922300345"
+        ],
+        "term_months": 12
+      }
+    },
+    {
+      "policy_number": "SQ-PROP-404077",
+      "client_id": "C004",
+      "product": "property",
+      "start_date": "2026-02-01",
+      "end_date": "2027-01-31",
+      "premium": 25000,
+      "details": {
+        "property_type": "apartment",
+        "property_address": "Almaty, Zheltoksan St 88, apt 17",
+        "sum_insured": 10000000
+      }
+    },
+    {
+      "policy_number": "SQ-TRVL-304552",
+      "client_id": "C006",
+      "product": "travel",
+      "start_date": "2026-09-20",
+      "end_date": "2026-10-05",
+      "premium": 35200,
+      "details": {
+        "trip_country": "Turkey",
+        "zone": "C",
+        "coverage": "50 000 USD",
+        "travelers_count": 2,
+        "traveler_max_age": 36
+      }
+    },
+    {
+      "policy_number": "SQ-CASCO-204300",
+      "client_id": "C007",
+      "product": "casco",
+      "start_date": "2025-10-21",
+      "end_date": "2026-10-20",
+      "premium": 380250,
+      "details": {
+        "vehicle_plate": "555KZT14",
+        "vehicle": "Skoda Octavia 2017",
+        "car_year": 2017,
+        "car_value": 6500000,
+        "package": "Standard",
+        "franchise": 50000
+      }
+    },
+    {
+      "policy_number": "SQ-OGPO-103990",
+      "client_id": "C008",
+      "product": "ogpo",
+      "start_date": "2026-02-15",
+      "end_date": "2027-02-14",
+      "premium": 38000,
+      "details": {
+        "vehicle_plate": "101AAA02",
+        "vehicle": "Kia Rio 2020",
+        "vehicle_type": "car",
+        "drivers_iin": [
+          "870911300895"
+        ],
+        "term_months": 12
+      }
+    },
+    {
+      "policy_number": "SQ-OGPO-104777",
+      "client_id": "C009",
+      "product": "ogpo",
+      "start_date": "2026-06-01",
+      "end_date": "2027-05-31",
+      "premium": 22800,
+      "details": {
+        "vehicle_plate": "333BCD02",
+        "vehicle": "Volkswagen Polo 2016",
+        "vehicle_type": "car",
+        "drivers_iin": [
+          "880126300907"
+        ],
+        "term_months": 12
+      }
+    },
+    {
+      "policy_number": "SQ-OGPO-105120",
+      "client_id": "C011",
+      "product": "ogpo",
+      "start_date": "2026-04-10",
+      "end_date": "2027-04-09",
+      "premium": 34000,
+      "details": {
+        "vehicle_plate": "515ADF01",
+        "vehicle": "Chevrolet Cobalt 2021",
+        "vehicle_type": "car",
+        "drivers_iin": [
+          "860219300112"
+        ],
+        "term_months": 12
+      }
+    },
+    {
+      "policy_number": "SQ-CASCO-204350",
+      "client_id": "C010",
+      "product": "casco",
+      "start_date": "2026-05-01",
+      "end_date": "2027-04-30",
+      "premium": 312000,
+      "details": {
+        "vehicle_plate": "404ATR06",
+        "vehicle": "Toyota RAV4 2022",
+        "car_year": 2022,
+        "car_value": 7800000,
+        "package": "Standard",
+        "franchise": 100000
+      }
+    }
+  ],
+  "claims": [
+    {
+      "claim_number": "CL-500198",
+      "client_id": "C001",
+      "policy_number": "SQ-CASCO-204118",
+      "claim_type": "casco",
+      "incident_date": "2026-05-06",
+      "status": "paid",
+      "approved_amount": 185000,
+      "next_step": "Payout completed on 2026-05-29."
+    },
+    {
+      "claim_number": "CL-500287",
+      "client_id": "C005",
+      "policy_number": "SQ-OGPO-103990",
+      "claim_type": "ogpo_victim",
+      "incident_date": "2026-08-18",
+      "status": "approved",
+      "approved_amount": 412000,
+      "assessor_estimate": 830000,
+      "decision_date": "2026-09-25",
+      "next_step": "Payout of 412 000 KZT scheduled for 2026-10-02. The amount follows the insurer's independent assessment; the service station estimate was 830 000 KZT."
+    },
+    {
+      "claim_number": "CL-500311",
+      "client_id": "C004",
+      "policy_number": "SQ-PROP-404077",
+      "claim_type": "property",
+      "incident_date": "2026-09-12",
+      "status": "documents_requested",
+      "missing_documents": [
+        "Act from the building management company"
+      ],
+      "next_step": "Upload the act from the building management company; review starts after that."
+    },
+    {
+      "claim_number": "CL-500330",
+      "client_id": "C007",
+      "policy_number": "SQ-CASCO-204300",
+      "claim_type": "casco",
+      "incident_date": "2026-09-03",
+      "status": "under_review",
+      "inspection_date": "2026-09-10",
+      "decision_due": "2026-10-09",
+      "next_step": "All documents received. Decision due by 2026-10-09, the client will get an SMS."
+    }
+  ],
+  "payments": [
+    {
+      "payment_id": "P-2950",
+      "client_id": "C009",
+      "date": "2026-06-01",
+      "amount": 22800,
+      "product": "ogpo",
+      "status": "success",
+      "policy_number": "SQ-OGPO-104777"
+    },
+    {
+      "payment_id": "P-3001",
+      "client_id": "C003",
+      "date": "2026-09-30",
+      "amount": 31200,
+      "product": "ogpo",
+      "status": "charged_policy_not_issued",
+      "policy_number": null,
+      "note": "Renewal for vehicle 222ABC17. Bank charged the card, policy issuance failed."
+    }
+  ]
+}

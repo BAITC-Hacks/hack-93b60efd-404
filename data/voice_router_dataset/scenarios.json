@@ -1,0 +1,2357 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "scenarios": [
+    {
+      "scenario_id": "SC01",
+      "slug": "ogpo_quote",
+      "name": "OGPO price quote",
+      "domain": "auto",
+      "category": "sales",
+      "description": "Client wants to know the price of mandatory motor third-party liability insurance (OGPO) before deciding.",
+      "not_this_if": [
+        {
+          "condition": "Client already decided and asks to issue or buy the policy",
+          "use_instead": "SC02"
+        },
+        {
+          "condition": "Client asks why the price went up compared to last year",
+          "use_instead": "SC32"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "region",
+          "vehicle_type",
+          "drivers_iin"
+        ],
+        "optional": [
+          "vehicle_plate"
+        ]
+      },
+      "actions": [
+        "get_bm_class",
+        "calc_ogpo_price"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Сколько стоит обязательная страховка на машину?",
+          "Хочу узнать цену ОГПО на легковушку в Алматы",
+          "Посчитайте, пожалуйста, автостраховку на двух водителей",
+          "Во сколько мне обойдётся обязательное страхование авто?"
+        ],
+        "kk": [
+          "Міндетті көлік сақтандыруы қанша тұрады?",
+          "ОГПО бағасын есептеп беріңізші",
+          "Екі жүргізушіге сақтандыру қанша болады?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сейчас посчитаю. В каком городе зарегистрирована машина и кто будет за рулём?",
+          "closing": "Полис на год выйдет {price} тенге. Оформим?"
+        },
+        "kk": {
+          "opening": "Қазір есептеп берейін. Көлік қай қалада тіркелген және оны кім жүргізеді?",
+          "closing": "Бір жылдық полис {price} теңге болады. Рәсімдейміз бе?"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC02",
+      "slug": "ogpo_buy",
+      "name": "OGPO purchase",
+      "domain": "auto",
+      "category": "sales",
+      "description": "Client wants to issue (buy) an OGPO policy now.",
+      "not_this_if": [
+        {
+          "condition": "Client only asks the price",
+          "use_instead": "SC01"
+        },
+        {
+          "condition": "Client wants to extend a policy that is about to expire",
+          "use_instead": "SC27"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "vehicle_plate",
+          "drivers_iin",
+          "phone"
+        ],
+        "optional": [
+          "region",
+          "vehicle_type"
+        ]
+      },
+      "actions": [
+        "calc_ogpo_price",
+        "create_policy",
+        "send_sms"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Хочу оформить обязательную страховку на машину",
+          "Оформите мне ОГПО, пожалуйста",
+          "Мне нужен полис на авто, машину только купил",
+          "Давайте застрахуем машину, обязательное"
+        ],
+        "kk": [
+          "Көлікке міндетті сақтандыру рәсімдегім келеді",
+          "ОГПО рәсімдеп беріңізші",
+          "Жаңа көлік алдым, полис керек"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Хорошо, оформим. Назовите госномер машины и ИИН водителей.",
+          "closing": "Готово: полис {policy_number}. Ссылку на оплату отправила в SMS, после оплаты полис сразу вступит в силу."
+        },
+        "kk": {
+          "opening": "Жақсы, рәсімдейік. Көліктің нөмірін және жүргізушілердің ЖСН-ін айтыңызшы.",
+          "closing": "Дайын: полис {policy_number}. Төлем сілтемесін SMS арқылы жібердім, төлегеннен кейін полис бірден күшіне енеді."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC03",
+      "slug": "casco_quote",
+      "name": "CASCO consultation and quote",
+      "domain": "auto",
+      "category": "sales",
+      "description": "Client asks about voluntary car insurance (CASCO): what it covers and how much it costs.",
+      "not_this_if": [
+        {
+          "condition": "Client asks about the mandatory policy OGPO",
+          "use_instead": "SC01"
+        },
+        {
+          "condition": "Client reports damage under an existing CASCO",
+          "use_instead": "SC13"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "car_value",
+          "car_year"
+        ],
+        "optional": [
+          "franchise",
+          "vehicle_plate"
+        ]
+      },
+      "actions": [
+        "calc_casco_price",
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Сколько стоит каско на машину?",
+          "Что покрывает ваше каско?",
+          "Хочу застраховать машину от угона и повреждений",
+          "Посчитайте каско на Камри 2021 года"
+        ],
+        "kk": [
+          "КАСКО қанша тұрады?",
+          "Көлікті ұрлықтан және зақымданудан сақтандырғым келеді",
+          "Сіздердің КАСКО нені қамтиды?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Расскажу и посчитаю. Какого года машина и сколько она примерно стоит?",
+          "closing": "КАСКО Стандарт на год выйдет {price} тенге. Покрывает и ущерб, и угон."
+        },
+        "kk": {
+          "opening": "Айтып, есептеп берейін. Көлік нешінші жылғы және шамамен қанша тұрады?",
+          "closing": "Бір жылдық КАСКО Стандарт {price} теңге болады. Зақымды да, ұрлықты да қамтиды."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC04",
+      "slug": "policy_add_driver",
+      "name": "Add driver to motor policy",
+      "domain": "auto",
+      "category": "servicing",
+      "description": "Client wants to add a driver to an existing OGPO or CASCO policy.",
+      "not_this_if": [
+        {
+          "condition": "Client wants to replace the car in the policy",
+          "use_instead": "SC05"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "new_driver_iin"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "get_bm_class",
+        "update_policy"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Нужно вписать ещё одного водителя в страховку",
+          "Как добавить сына в полис?",
+          "Хочу добавить жену в ОГПО",
+          "Впишите, пожалуйста, нового водителя"
+        ],
+        "kk": [
+          "Полиске тағы бір жүргізушіні қосу керек",
+          "Ұлымды полиске қалай қосамын?",
+          "Сақтандыруға жаңа жүргізуші қосыңызшы"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Добавим. Назовите номер полиса и ИИН нового водителя.",
+          "closing": "Готово, водитель добавлен. Доплата составит {extra_premium} тенге, ссылку отправлю в SMS."
+        },
+        "kk": {
+          "opening": "Қосайық. Полис нөмірін және жаңа жүргізушінің ЖСН-ін айтыңызшы.",
+          "closing": "Дайын, жүргізуші қосылды. Қосымша төлем {extra_premium} теңге, сілтемені SMS-пен жіберемін."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC05",
+      "slug": "policy_change_vehicle",
+      "name": "Change vehicle or plate in policy",
+      "domain": "auto",
+      "category": "servicing",
+      "description": "Client replaced the car or got a new plate and wants to update the policy.",
+      "not_this_if": [
+        {
+          "condition": "Client sold the car and wants to terminate the policy with a refund",
+          "use_instead": "SC28"
+        },
+        {
+          "condition": "Client adds a driver",
+          "use_instead": "SC04"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "vehicle_plate"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "update_policy"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Поменял машину, как переоформить страховку?",
+          "У меня новые номера, нужно изменить полис",
+          "Купил другую машину, можно перенести на неё полис?",
+          "Замените машину в страховке"
+        ],
+        "kk": [
+          "Көлігімді ауыстырдым, полисті қалай өзгертемін?",
+          "Көлік нөмірім өзгерді, полисті түзету керек",
+          "Басқа көлік алдым, полисті соған ауыстыруға бола ма?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Переоформим. Назовите номер полиса и госномер новой машины.",
+          "closing": "Готово, в полисе теперь машина {vehicle_plate}. Доплата {extra_premium} тенге."
+        },
+        "kk": {
+          "opening": "Өзгертейік. Полис нөмірін және жаңа көліктің нөмірін айтыңызшы.",
+          "closing": "Дайын, полисте енді {vehicle_plate} көлігі тұр. Қосымша төлем {extra_premium} теңге."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC06",
+      "slug": "travel_buy",
+      "name": "Travel insurance purchase",
+      "domain": "travel",
+      "category": "sales",
+      "description": "Client plans a trip abroad and wants to buy travel medical insurance.",
+      "not_this_if": [
+        {
+          "condition": "Client is already abroad and needs medical help or reports an event",
+          "use_instead": "SC15"
+        },
+        {
+          "condition": "Client needs a certificate for the embassy on an existing policy",
+          "use_instead": "SC39"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "trip_country",
+          "trip_start",
+          "trip_end",
+          "travelers_count",
+          "traveler_max_age"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "calc_travel_price",
+        "create_policy",
+        "send_sms"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Нужна страховка для поездки в Турцию",
+          "Сколько стоит туристическая страховка в Европу?",
+          "Едем с семьёй в Дубай, хотим застраховаться",
+          "Оформите страховку для визы в Шенген"
+        ],
+        "kk": [
+          "Түркияға сапарға сақтандыру керек",
+          "Шетелге шығуға сақтандыру қанша тұрады?",
+          "Отбасымызбен Дубайға барамыз, сақтандыру рәсімдегіміз келеді"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "С удовольствием помогу. Куда едете и на какие даты?",
+          "closing": "Для {travelers_count} человек выйдет {price} тенге, покрытие {coverage}. Оформляем?"
+        },
+        "kk": {
+          "opening": "Көмектесейін. Қай елге және қай күндері барасыз?",
+          "closing": "{travelers_count} адамға {price} теңге болады, өтеу сомасы {coverage}. Рәсімдейміз бе?"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC07",
+      "slug": "property_quote",
+      "name": "Home insurance consultation",
+      "domain": "property",
+      "category": "sales",
+      "description": "Client wants to insure an apartment or house, asks conditions and price.",
+      "not_this_if": [
+        {
+          "condition": "Property is already damaged and client reports it",
+          "use_instead": "SC14"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "property_type",
+          "sum_insured"
+        ],
+        "optional": [
+          "property_address"
+        ]
+      },
+      "actions": [
+        "calc_property_price",
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Хочу застраховать квартиру",
+          "Сколько стоит страховка дома от пожара?",
+          "Можно застраховать квартиру от затопления соседей?",
+          "Какие у вас условия страхования жилья?"
+        ],
+        "kk": [
+          "Пәтерімді сақтандырғым келеді",
+          "Үйді өрттен сақтандыру қанша тұрады?",
+          "Тұрғын үйді сақтандыру шарттары қандай?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Расскажу. Это квартира или дом, и на какую сумму хотите застраховать?",
+          "closing": "На год выйдет {price} тенге. В покрытие входят пожар, затопление, кража и ответственность перед соседями."
+        },
+        "kk": {
+          "opening": "Айтып берейін. Пәтер ме, үй ме және қанша сомаға сақтандырасыз?",
+          "closing": "Бір жылға {price} теңге болады. Өрт, су басу, ұрлық және көршілер алдындағы жауапкершілік кіреді."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC08",
+      "slug": "accident_quote",
+      "name": "Accident insurance consultation",
+      "domain": "accident",
+      "category": "sales",
+      "description": "Client asks about personal accident insurance (injury, disability) for themselves or family.",
+      "not_this_if": [
+        {
+          "condition": "Client already had an accident and asks for a payout",
+          "use_instead": "SC16"
+        },
+        {
+          "condition": "Client asks about life insurance, which the company does not offer",
+          "use_instead": "SYS_OUT_OF_SCOPE"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "sum_insured"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "calc_accident_price",
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Есть страховка от несчастного случая?",
+          "Хочу застраховать ребёнка на время спортивных секций",
+          "Сколько стоит страховка от травм?",
+          "Расскажите про страхование от несчастных случаев"
+        ],
+        "kk": [
+          "Жазатайым оқиғадан сақтандыру бар ма?",
+          "Баламды спорт секциясына байланысты сақтандырғым келеді",
+          "Жарақаттан сақтандыру қанша тұрады?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Да, такая программа есть. На какую сумму рассматриваете защиту: 1, 3 или 5 миллионов?",
+          "closing": "На год выйдет {price} тенге, покрываются травмы и инвалидность в результате несчастного случая."
+        },
+        "kk": {
+          "opening": "Иә, мұндай бағдарлама бар. Қанша сомаға қарастырасыз: 1, 3 әлде 5 миллион ба?",
+          "closing": "Бір жылға {price} теңге, жазатайым оқиғадан болған жарақат пен мүгедектік өтеледі."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC09",
+      "slug": "dms_individual_quote",
+      "name": "Individual health insurance consultation",
+      "domain": "health",
+      "category": "sales",
+      "description": "Client without corporate coverage wants to buy voluntary health insurance (DMS) for themselves.",
+      "not_this_if": [
+        {
+          "condition": "Client already has DMS and asks what it covers",
+          "use_instead": "SC22"
+        },
+        {
+          "condition": "Client represents a company and wants coverage for employees",
+          "use_instead": "SC10"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [],
+        "optional": [
+          "city"
+        ]
+      },
+      "actions": [
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Можно купить медицинскую страховку для себя?",
+          "Сколько стоит ДМС для физлица?",
+          "Хочу добровольное медстрахование, работодатель не даёт",
+          "Какие программы ДМС у вас есть?"
+        ],
+        "kk": [
+          "Өзіме медициналық сақтандыру алуға бола ма?",
+          "Жеке тұлғаға ерікті медициналық сақтандыру қанша тұрады?",
+          "ДМС бағдарламаларыңыз қандай?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Да, есть две программы: Базовая и Комфорт. Рассказать, чем отличаются?",
+          "closing": "{answer} Могу отправить подробные условия в SMS."
+        },
+        "kk": {
+          "opening": "Иә, екі бағдарлама бар: Базалық және Комфорт. Айырмашылығын айтып берейін бе?",
+          "closing": "{answer} Толық шарттарын SMS-пен жіберейін бе?"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC10",
+      "slug": "corporate_request",
+      "name": "Corporate insurance request",
+      "domain": "corporate",
+      "category": "sales",
+      "description": "Company representative wants insurance for employees or company assets.",
+      "not_this_if": [
+        {
+          "condition": "Individual employee asks about their own corporate DMS",
+          "use_instead": "SC22"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "company_name",
+          "employees_count",
+          "phone"
+        ],
+        "optional": [
+          "email"
+        ]
+      },
+      "actions": [
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "always after collecting contacts",
+        "queue": "corporate_sales"
+      },
+      "examples": {
+        "ru": [
+          "Хотим застраховать сотрудников компании",
+          "Нужен ДМС для 50 работников",
+          "Я из компании, интересует корпоративное страхование",
+          "Можно застраховать автопарк предприятия?"
+        ],
+        "kk": [
+          "Компания қызметкерлерін сақтандырғымыз келеді",
+          "50 қызметкерге медициналық сақтандыру керек",
+          "Корпоративтік сақтандыру қызықтырады"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "С удовольствием. Как называется компания и сколько сотрудников?",
+          "closing": "Спасибо, передаю ваш запрос менеджеру корпоративных продаж, он свяжется с вами в течение рабочего дня."
+        },
+        "kk": {
+          "opening": "Әрине. Компания атауы қандай және қанша қызметкер бар?",
+          "closing": "Рақмет, сұранысыңызды корпоративтік сату менеджеріне беремін, ол жұмыс күні ішінде хабарласады."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC11",
+      "slug": "road_accident_now",
+      "name": "Road accident just happened",
+      "domain": "auto",
+      "category": "claims",
+      "description": "Client is at the scene of a road accident right now and needs instructions.",
+      "not_this_if": [
+        {
+          "condition": "Accident happened earlier and the client wants to file for a payout as the victim",
+          "use_instead": "SC12"
+        },
+        {
+          "condition": "Accident happened earlier and the client has CASCO",
+          "use_instead": "SC13"
+        }
+      ],
+      "priority": "urgent",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "injured",
+          "location"
+        ],
+        "optional": [
+          "vehicle_plate"
+        ]
+      },
+      "actions": [
+        "kb_lookup",
+        "send_sms",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "anyone injured or client is confused",
+        "queue": "claims_team"
+      },
+      "examples": {
+        "ru": [
+          "Я только что попал в аварию, что делать?",
+          "В меня врезались прямо сейчас",
+          "Стою на дороге после ДТП, помогите",
+          "Авария, машину помяли, я на месте"
+        ],
+        "kk": [
+          "Қазір ғана жол апатына түстім, не істеу керек?",
+          "Маған қазір көлік соғып кетті",
+          "Жол апатынан кейін жолда тұрмын, көмектесіңіз"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Главное — все ли целы? Если есть пострадавшие, сразу звоните 112.",
+          "closing": "Сфотографируйте место и машины, не убирайте их до оформления. Инструкцию отправила в SMS, заявление подадим, когда будете готовы."
+        },
+        "kk": {
+          "opening": "Ең бастысы — барлығы аман ба? Зардап шеккендер болса, бірден 112-ге хабарласыңыз.",
+          "closing": "Орынды және көліктерді суретке түсіріңіз, рәсімделгенге дейін қозғамаңыз. Нұсқаулықты SMS-пен жібердім."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC12",
+      "slug": "ogpo_victim_claim",
+      "name": "Claim as victim under culprit's OGPO",
+      "domain": "auto",
+      "category": "claims",
+      "description": "Client was the victim in a past accident; the at-fault driver is insured by Saqta; client wants a payout.",
+      "not_this_if": [
+        {
+          "condition": "Accident is happening right now",
+          "use_instead": "SC11"
+        },
+        {
+          "condition": "Client was at fault or claims under own CASCO",
+          "use_instead": "SC13"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "culprit_vehicle_plate",
+          "incident_date",
+          "incident_description",
+          "phone"
+        ],
+        "optional": [
+          "iin"
+        ]
+      },
+      "actions": [
+        "get_policy",
+        "create_claim",
+        "send_sms"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Виновник ДТП застрахован у вас, как получить выплату?",
+          "Меня ударили, у виновного ваш полис",
+          "Хочу подать заявление на выплату как пострадавший",
+          "Вчера была авария, виновата другая сторона, страховка у вас"
+        ],
+        "kk": [
+          "ЖКО кінәлісі сіздерде сақтандырылған, төлемді қалай аламын?",
+          "Маған соқтығысқан жүргізушінің полисі сіздерде",
+          "Зардап шегуші ретінде төлемге өтініш бергім келеді"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сочувствую, давайте оформим. Назовите госномер машины виновника и дату ДТП.",
+          "closing": "Заявление {claim_number} зарегистрировано. Список документов отправила в SMS."
+        },
+        "kk": {
+          "opening": "Түсінемін, рәсімдейік. Кінәлі көліктің нөмірін және оқиға болған күнді айтыңызшы.",
+          "closing": "{claim_number} өтініші тіркелді. Құжаттар тізімін SMS-пен жібердім."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC13",
+      "slug": "casco_claim",
+      "name": "CASCO damage claim",
+      "domain": "auto",
+      "category": "claims",
+      "description": "Client's car insured under CASCO was damaged or stolen; client wants to file a claim.",
+      "not_this_if": [
+        {
+          "condition": "Accident is happening right now",
+          "use_instead": "SC11"
+        },
+        {
+          "condition": "Client is the victim and the culprit has OGPO with Saqta",
+          "use_instead": "SC12"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "incident_date",
+          "incident_description"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "create_claim",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": true,
+      "handoff": {
+        "when": "theft or total loss",
+        "queue": "claims_team"
+      },
+      "examples": {
+        "ru": [
+          "У меня каско, машину поцарапали во дворе",
+          "Хочу заявить по каско, упало дерево на машину",
+          "Угнали машину, она застрахована по каско",
+          "Разбил машину сам, есть каско"
+        ],
+        "kk": [
+          "КАСКО бар, аулада көлікті сызып кетті",
+          "Көлікке ағаш құлады, КАСКО бойынша өтініш бергім келеді",
+          "Көлігімді ұрлап кетті, КАСКО бар"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Неприятно, сейчас оформим. Назовите номер полиса КАСКО и когда это случилось.",
+          "closing": "Заявление {claim_number} принято. Следующий шаг — осмотр машины, могу сразу записать."
+        },
+        "kk": {
+          "opening": "Өкінішті, қазір рәсімдейік. КАСКО полисінің нөмірін және оқиға қашан болғанын айтыңызшы.",
+          "closing": "{claim_number} өтініші қабылданды. Келесі қадам — көлікті қарау, бірден жазып қояйын ба?"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC14",
+      "slug": "property_claim",
+      "name": "Property damage claim",
+      "domain": "property",
+      "category": "claims",
+      "description": "Insured apartment or house was damaged (flood, fire, theft); client reports it.",
+      "not_this_if": [
+        {
+          "condition": "Client only wants to buy home insurance",
+          "use_instead": "SC07"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "incident_date",
+          "incident_description"
+        ],
+        "optional": [
+          "property_address"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "create_claim",
+        "send_sms",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": true,
+      "handoff": {
+        "when": "fire with injured people",
+        "queue": "claims_team"
+      },
+      "examples": {
+        "ru": [
+          "Соседи затопили квартиру, она у вас застрахована",
+          "У нас был пожар на кухне, страховка есть",
+          "Обокрали квартиру, хочу заявить",
+          "Прорвало трубу, испортился ремонт"
+        ],
+        "kk": [
+          "Көршілер пәтерімді су басып кетті, пәтер сақтандырылған",
+          "Ас үйде өрт болды, сақтандыру бар",
+          "Пәтерімді тонап кетті, өтініш бергім келеді"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Очень жаль. Давайте зафиксируем: номер полиса и когда это произошло?",
+          "closing": "Заявление {claim_number} зарегистрировано. Сохраните фото повреждений, список документов в SMS."
+        },
+        "kk": {
+          "opening": "Өте өкінішті. Тіркеп алайық: полис нөмірі және бұл қашан болды?",
+          "closing": "{claim_number} өтініші тіркелді. Зақымның суреттерін сақтаңыз, құжаттар тізімі SMS-те."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC15",
+      "slug": "travel_claim_abroad",
+      "name": "Medical event abroad",
+      "domain": "travel",
+      "category": "claims",
+      "description": "Client is abroad with a travel policy and got sick, injured or needs medical help now.",
+      "not_this_if": [
+        {
+          "condition": "Client is planning a trip and wants to buy a policy",
+          "use_instead": "SC06"
+        },
+        {
+          "condition": "Client asks about corporate DMS coverage at home",
+          "use_instead": "SC22"
+        }
+      ],
+      "priority": "urgent",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "location",
+          "incident_description"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "get_policy",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "always after identifying the policy",
+        "queue": "medical_assistance_24_7"
+      },
+      "examples": {
+        "ru": [
+          "Я за границей, заболел, что делать по страховке?",
+          "Ребёнок в Турции упал, нужен врач, у нас ваша страховка",
+          "Мы в отпуске, у мужа температура, куда обращаться?",
+          "Попал в больницу в Грузии, страховка ваша"
+        ],
+        "kk": [
+          "Шетелдемін, ауырып қалдым, сақтандыру бойынша не істеймін?",
+          "Түркияда баламыз құлап қалды, дәрігер керек",
+          "Демалыстамыз, күйеуімнің қызуы көтерілді, қайда хабарласамыз?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сейчас помогу. Назовите номер полиса и где вы находитесь.",
+          "closing": "Соединяю с медицинским ассистансом, они круглосуточно организуют врача. Сами ничего не оплачивайте без их согласования."
+        },
+        "kk": {
+          "opening": "Қазір көмектесемін. Полис нөмірін және қай жерде екеніңізді айтыңызшы.",
+          "closing": "Медициналық ассистансқа қосамын, олар тәулік бойы дәрігер ұйымдастырады. Келісусіз өзіңіз ештеңе төлемеңіз."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC16",
+      "slug": "accident_claim",
+      "name": "Accident injury claim",
+      "domain": "accident",
+      "category": "claims",
+      "description": "Insured person got injured in an accident and wants a payout under accident insurance.",
+      "not_this_if": [
+        {
+          "condition": "Client asks about buying accident insurance",
+          "use_instead": "SC08"
+        },
+        {
+          "condition": "Injury happened in a road accident at the scene now",
+          "use_instead": "SC11"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "incident_date",
+          "incident_description"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "create_claim",
+        "send_sms"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Сломал руку, у меня страховка от несчастного случая",
+          "Ребёнок получил травму на тренировке, полис у вас",
+          "Как получить выплату за травму?",
+          "Упала на льду, перелом, есть страховка"
+        ],
+        "kk": [
+          "Қолымды сындырып алдым, жазатайым оқиғадан сақтандыруым бар",
+          "Бала жаттығуда жарақат алды, полис сіздерде",
+          "Жарақат үшін төлемді қалай аламын?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Выздоравливайте. Давайте оформим: номер полиса и дата травмы?",
+          "closing": "Заявление {claim_number} принято. Понадобится справка из травмпункта, список отправила в SMS."
+        },
+        "kk": {
+          "opening": "Тезірек сауығыңыз. Рәсімдейік: полис нөмірі және жарақат алған күн?",
+          "closing": "{claim_number} өтініші қабылданды. Травмпункттен анықтама керек болады, тізімді SMS-пен жібердім."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC17",
+      "slug": "claim_status",
+      "name": "Claim status",
+      "domain": "general",
+      "category": "claims",
+      "description": "Client wants to know the status of an existing claim or payout.",
+      "not_this_if": [
+        {
+          "condition": "Client disagrees with the decision or the amount",
+          "use_instead": "SC19"
+        },
+        {
+          "condition": "Client asks which documents are needed",
+          "use_instead": "SC18"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "claim_number"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_claim"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Какой статус по моему заявлению?",
+          "Когда будет выплата?",
+          "Подавал документы две недели назад, что с ними?",
+          "Хочу узнать, рассмотрели ли моё заявление"
+        ],
+        "kk": [
+          "Өтінішім қандай күйде?",
+          "Төлем қашан болады?",
+          "Екі апта бұрын құжат тапсырдым, не болды?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сейчас проверю. Назовите номер заявления или номер телефона.",
+          "closing": "По заявлению {claim_number}: {status}. {next_step}"
+        },
+        "kk": {
+          "opening": "Қазір тексерейін. Өтініш нөмірін немесе телефон нөміріңізді айтыңызшы.",
+          "closing": "{claim_number} өтініші бойынша: {status}. {next_step}"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC18",
+      "slug": "claim_documents",
+      "name": "Documents for a claim",
+      "domain": "general",
+      "category": "claims",
+      "description": "Client asks which documents are needed for a claim or how to submit them.",
+      "not_this_if": [
+        {
+          "condition": "Client asks for a certificate or copy of a policy",
+          "use_instead": "SC39"
+        },
+        {
+          "condition": "Client asks the status of a claim",
+          "use_instead": "SC17"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "product_type"
+        ],
+        "optional": [
+          "claim_number"
+        ]
+      },
+      "actions": [
+        "kb_lookup",
+        "send_sms"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Какие документы нужны для выплаты?",
+          "Куда отправить документы по заявлению?",
+          "Что нужно принести после ДТП?",
+          "Можно документы прислать онлайн?"
+        ],
+        "kk": [
+          "Төлем алу үшін қандай құжаттар керек?",
+          "Өтініш бойынша құжаттарды қайда жіберемін?",
+          "Құжаттарды онлайн жіберуге бола ма?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Подскажу. По какой страховке случай?",
+          "closing": "Нужны: {answer}. Загрузить можно в приложении, список отправлю в SMS."
+        },
+        "kk": {
+          "opening": "Айтып берейін. Қай сақтандыру бойынша?",
+          "closing": "Керек құжаттар: {answer}. Қосымша арқылы жүктеуге болады, тізімді SMS-пен жіберемін."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC19",
+      "slug": "claim_dispute",
+      "name": "Disagreement with claim decision",
+      "domain": "general",
+      "category": "claims",
+      "description": "Client disagrees with a claim refusal or the payout amount and wants to challenge it.",
+      "not_this_if": [
+        {
+          "condition": "Client only asks the status",
+          "use_instead": "SC17"
+        },
+        {
+          "condition": "Client complains about service quality, not the decision",
+          "use_instead": "SC35"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "claim_number",
+          "complaint_text"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_claim",
+        "create_dispute",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": true,
+      "handoff": {
+        "when": "client asks for a person",
+        "queue": "claims_team"
+      },
+      "examples": {
+        "ru": [
+          "Мне отказали в выплате, я не согласен",
+          "Сумма выплаты слишком маленькая",
+          "Хочу оспорить решение по заявлению",
+          "Выплатили меньше, чем стоит ремонт"
+        ],
+        "kk": [
+          "Төлемнен бас тартты, мен келіспеймін",
+          "Төлем сомасы тым аз",
+          "Өтініш бойынша шешімге шағымданғым келеді"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Понимаю вас, давайте разберёмся. Назовите номер заявления.",
+          "closing": "Я зарегистрировала обращение {ticket_id}. Его рассмотрят в течение 15 рабочих дней, ответ придёт письменно."
+        },
+        "kk": {
+          "opening": "Түсінемін, анықтап көрейік. Өтініш нөмірін айтыңызшы.",
+          "closing": "{ticket_id} өтінішін тіркедім. Ол 15 жұмыс күні ішінде қаралады, жауап жазбаша келеді."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC20",
+      "slug": "damage_inspection",
+      "name": "Book vehicle inspection",
+      "domain": "auto",
+      "category": "claims",
+      "description": "Client with a registered claim wants to book a damage inspection of the vehicle.",
+      "not_this_if": [
+        {
+          "condition": "No claim is registered yet",
+          "use_instead": "SC13"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "claim_number",
+          "city",
+          "preferred_date"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "get_claim",
+        "book_inspection"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Хочу записаться на осмотр машины",
+          "Когда можно привезти машину на оценку ущерба?",
+          "Запишите на осмотр по заявлению",
+          "Где у вас осматривают машины?"
+        ],
+        "kk": [
+          "Көлікті қаратуға жазылғым келеді",
+          "Зақымды бағалауға көлікті қашан әкелуге болады?",
+          "Өтініш бойынша қарауға жазып қойыңызшы"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Запишу. На какой день вам удобно?",
+          "closing": "Записала вас на {slot_datetime}, адрес: {address}. Возьмите техпаспорт."
+        },
+        "kk": {
+          "opening": "Жазып қояйын. Қай күн ыңғайлы?",
+          "closing": "Сізді {slot_datetime} уақытына жаздым, мекенжайы: {address}. Техпаспортты ала келіңіз."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC21",
+      "slug": "dms_appointment",
+      "name": "Doctor appointment under DMS",
+      "domain": "health",
+      "category": "servicing",
+      "description": "Client with DMS wants to see a doctor and asks to book an appointment.",
+      "not_this_if": [
+        {
+          "condition": "Client only asks for the list of clinics",
+          "use_instead": "SC23"
+        },
+        {
+          "condition": "Client asks whether a service is covered",
+          "use_instead": "SC22"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "doctor_specialty",
+          "city",
+          "preferred_date"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "find_client",
+        "book_appointment"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Запишите меня к терапевту по страховке",
+          "Нужно к стоматологу по ДМС",
+          "Хочу попасть к кардиологу, у меня полис от работы",
+          "Можно записаться к врачу на завтра?"
+        ],
+        "kk": [
+          "Сақтандыру бойынша терапевтке жазып қойыңызшы",
+          "ДМС бойынша тіс дәрігеріне бару керек",
+          "Ертеңге дәрігерге жазылуға бола ма?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Конечно. К какому врачу и на какой день?",
+          "closing": "Записала вас в {clinic_name} на {slot_datetime}. Возьмите удостоверение личности."
+        },
+        "kk": {
+          "opening": "Әрине. Қай дәрігерге және қай күнге?",
+          "closing": "Сізді {clinic_name} емханасына {slot_datetime} уақытына жаздым. Жеке куәлігіңізді ала жүріңіз."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC22",
+      "slug": "dms_coverage",
+      "name": "DMS coverage check",
+      "domain": "health",
+      "category": "servicing",
+      "description": "Client asks whether their health insurance covers a specific service, test or medication.",
+      "not_this_if": [
+        {
+          "condition": "Client is abroad and needs help under a travel policy",
+          "use_instead": "SC15"
+        },
+        {
+          "condition": "Client asks about general exclusions of any product",
+          "use_instead": "SC40"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "service_name"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "find_client",
+        "check_coverage"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Покрывает ли страховка МРТ?",
+          "Входит ли стоматология в мой ДМС?",
+          "Лекарства оплачиваются по полису?",
+          "Анализы бесплатно по страховке?"
+        ],
+        "kk": [
+          "Сақтандыру МРТ-ны өтей ме?",
+          "Менің ДМС-іме тіс емдеу кіре ме?",
+          "Дәрі-дәрмек полис бойынша төлене ме?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Проверю по вашей программе. Какую услугу хотите уточнить?",
+          "closing": "{note}"
+        },
+        "kk": {
+          "opening": "Бағдарламаңыз бойынша тексерейін. Қай қызметті нақтылайсыз?",
+          "closing": "{note}"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC23",
+      "slug": "dms_clinics",
+      "name": "Partner clinics list",
+      "domain": "health",
+      "category": "info",
+      "description": "Client asks which clinics work under Saqta DMS in their city.",
+      "not_this_if": [
+        {
+          "condition": "Client wants to be booked to a doctor",
+          "use_instead": "SC21"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "city"
+        ],
+        "optional": [
+          "doctor_specialty"
+        ]
+      },
+      "actions": [
+        "list_clinics",
+        "send_sms"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "В какие клиники можно ходить по страховке?",
+          "Список ваших клиник в Астане",
+          "Какие медцентры работают с вами?",
+          "Есть клиника-партнёр рядом с Алмалинским районом?"
+        ],
+        "kk": [
+          "Сақтандыру бойынша қай емханаларға баруға болады?",
+          "Астанадағы серіктес емханалар тізімі қандай?",
+          "Сіздермен қай медициналық орталықтар жұмыс істейді?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Подскажу. В каком вы городе?",
+          "closing": "В вашем городе: {clinics}. Отправлю список с адресами в SMS."
+        },
+        "kk": {
+          "opening": "Айтып берейін. Қай қаладасыз?",
+          "closing": "Сіздің қалаңызда: {clinics}. Мекенжайларымен тізімді SMS-пен жіберемін."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC24",
+      "slug": "dms_card",
+      "name": "DMS e-card issue",
+      "domain": "health",
+      "category": "servicing",
+      "description": "Client cannot find or did not receive their electronic DMS card.",
+      "not_this_if": [
+        {
+          "condition": "Client cannot log into the app in general",
+          "use_instead": "SC34"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "phone"
+        ],
+        "optional": [
+          "policy_number"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "kb_lookup",
+        "send_sms"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Не могу найти карточку ДМС",
+          "Мне не пришла карта медстраховки",
+          "Где взять электронную карту по страховке?",
+          "Клиника просит карту ДМС, а у меня её нет"
+        ],
+        "kk": [
+          "ДМС картасын таба алмай жүрмін",
+          "Медициналық сақтандыру картасы келмеді",
+          "Электрондық сақтандыру картасын қайдан аламын?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Помогу. Карта есть в приложении в разделе «Мои полисы». Назовите телефон, отправлю её в SMS.",
+          "closing": "Отправила карту на номер {phone}. В клинике достаточно показать её с экрана."
+        },
+        "kk": {
+          "opening": "Көмектесейін. Карта қосымшадағы «Менің полистерім» бөлімінде. Телефоныңызды айтыңыз, SMS-пен жіберейін.",
+          "closing": "Картаны {phone} нөміріне жібердім. Емханада экраннан көрсетсеңіз жеткілікті."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC25",
+      "slug": "policy_validity",
+      "name": "Check policy validity",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Client wants to check whether a policy is active and until when.",
+      "not_this_if": [
+        {
+          "condition": "Client did not receive policy documents",
+          "use_instead": "SC26"
+        },
+        {
+          "condition": "Client got a suspicious call about policy cancellation",
+          "use_instead": "SC38"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Действует ли мой полис?",
+          "До какого числа у меня страховка?",
+          "Проверьте, активна ли страховка на машину",
+          "Хочу убедиться, что полис оформлен"
+        ],
+        "kk": [
+          "Полисім жарамды ма?",
+          "Сақтандыруым нешесіне дейін?",
+          "Көлік сақтандыруы белсенді ме, тексеріңізші"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Проверю. Назовите номер полиса или телефон.",
+          "closing": "Полис {policy_number} действует до {end_date}."
+        },
+        "kk": {
+          "opening": "Тексерейін. Полис нөмірін немесе телефоныңызды айтыңызшы.",
+          "closing": "{policy_number} полисі {end_date} дейін жарамды."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC26",
+      "slug": "policy_documents_resend",
+      "name": "Resend policy documents",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Policy is issued and paid, but the client did not receive the document by SMS or email.",
+      "not_this_if": [
+        {
+          "condition": "Money was charged but the policy was not issued",
+          "use_instead": "SC30"
+        },
+        {
+          "condition": "Client needs a certificate or copy for another purpose",
+          "use_instead": "SC39"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "phone"
+        ],
+        "optional": [
+          "policy_number",
+          "email"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policies",
+        "resend_documents"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Не пришёл полис на почту",
+          "Отправьте ещё раз страховку в SMS",
+          "Где мой полис? Оплатил, всё оформилось, а документа нет",
+          "Потерял полис, пришлите повторно"
+        ],
+        "kk": [
+          "Полис поштаға келмеді",
+          "Сақтандыруды SMS-пен қайта жіберіңізші",
+          "Полисім жоғалып кетті, қайта жіберіңізші"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сейчас отправлю. Назовите номер телефона, на который оформляли.",
+          "closing": "Отправила полис на {sent_to}. Проверьте, пожалуйста, через минуту."
+        },
+        "kk": {
+          "opening": "Қазір жіберемін. Рәсімдеген телефон нөміріңізді айтыңызшы.",
+          "closing": "Полисті {sent_to} мекенжайына жібердім. Бір минуттан кейін тексеріңізші."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC27",
+      "slug": "policy_renewal",
+      "name": "Policy renewal",
+      "domain": "general",
+      "category": "sales",
+      "description": "Client's policy is expiring or expired recently and they want to extend it.",
+      "not_this_if": [
+        {
+          "condition": "Client has no policy with Saqta and buys a new one",
+          "use_instead": "SC02"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "renew_policy",
+        "send_sms"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Хочу продлить страховку",
+          "У меня заканчивается полис, продлите",
+          "Пришло уведомление, что истекает ОГПО",
+          "Можно продлить каско на следующий год?"
+        ],
+        "kk": [
+          "Сақтандыруды ұзартқым келеді",
+          "Полисім бітіп жатыр, ұзартып беріңізші",
+          "КАСКО-ны келесі жылға ұзартуға бола ма?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Продлим. Назовите номер текущего полиса.",
+          "closing": "Новый полис {policy_number} на год стоит {price} тенге, ссылка на оплату в SMS."
+        },
+        "kk": {
+          "opening": "Ұзартайық. Қазіргі полис нөмірін айтыңызшы.",
+          "closing": "Бір жылға жаңа {policy_number} полисі {price} теңге, төлем сілтемесі SMS-те."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC28",
+      "slug": "policy_cancel_refund",
+      "name": "Policy termination and refund",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Client wants to terminate a policy early (e.g. sold the car) and get a refund for unused months.",
+      "not_this_if": [
+        {
+          "condition": "Client replaces the car and keeps the policy",
+          "use_instead": "SC05"
+        },
+        {
+          "condition": "Client is angry about service; cancellation is not clearly requested",
+          "use_instead": "SC35"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "cancel_reason"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "get_policy",
+        "cancel_policy"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Хочу расторгнуть договор страхования",
+          "Продал машину, верните деньги за страховку",
+          "Как отказаться от полиса и вернуть остаток?",
+          "Мне больше не нужна страховка, закройте её"
+        ],
+        "kk": [
+          "Сақтандыру шартын бұзғым келеді",
+          "Көлікті саттым, сақтандыру ақшасын қайтарыңыз",
+          "Полистен бас тартып, қалған ақшаны қалай қайтарамын?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Помогу. Назовите номер полиса и причину расторжения.",
+          "closing": "Договор расторгнут. К возврату {refund_amount} тенге, деньги придут на карту в течение 10 рабочих дней."
+        },
+        "kk": {
+          "opening": "Көмектесейін. Полис нөмірін және шартты бұзу себебін айтыңызшы.",
+          "closing": "Шарт бұзылды. Қайтарылатын сома {refund_amount} теңге, ақша 10 жұмыс күні ішінде картаға түседі."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC29",
+      "slug": "contact_update",
+      "name": "Update contact details",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Client wants to change phone number, email or address in their profile.",
+      "not_this_if": [
+        {
+          "condition": "Client changes vehicle data in the policy",
+          "use_instead": "SC05"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "contact_field",
+          "new_value"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "update_contact"
+      ],
+      "requires_confirmation": true,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Поменялся номер телефона, обновите",
+          "Хочу изменить адрес в договоре",
+          "Смените почту, на которую приходят полисы",
+          "Я переехал, нужно поменять адрес"
+        ],
+        "kk": [
+          "Телефон нөмірім өзгерді, жаңартыңызшы",
+          "Шарттағы мекенжайды өзгерткім келеді",
+          "Полис келетін поштаны ауыстырыңызшы"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Обновлю. Что меняем: телефон, почту или адрес?",
+          "closing": "Готово, данные обновлены."
+        },
+        "kk": {
+          "opening": "Жаңартайын. Нені өзгертеміз: телефон, пошта әлде мекенжай ма?",
+          "closing": "Дайын, деректер жаңартылды."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC30",
+      "slug": "payment_issue",
+      "name": "Charged but policy not issued",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Money was charged but the policy was not issued or payment status is unclear.",
+      "not_this_if": [
+        {
+          "condition": "Policy was issued, only the document did not arrive",
+          "use_instead": "SC26"
+        },
+        {
+          "condition": "Client asks which payment methods exist",
+          "use_instead": "SC31"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "payment_date",
+          "phone"
+        ],
+        "optional": [
+          "payment_amount"
+        ]
+      },
+      "actions": [
+        "find_client",
+        "check_payment",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "payment found but policy not issued",
+        "queue": "operator_general"
+      },
+      "examples": {
+        "ru": [
+          "С карты ушли деньги, но полиса нигде нет",
+          "Оплатил страховку, но ничего не пришло и в приложении пусто",
+          "Два раза списали деньги за полис",
+          "Платёж прошёл, а полиса нет"
+        ],
+        "kk": [
+          "Ақша шешілді, бірақ полис рәсімделмеді",
+          "Сақтандыруды төледім, бірақ ештеңе келмеді",
+          "Полис үшін ақшаны екі рет алып қойды"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Разберёмся. Когда был платёж и на какую сумму?",
+          "closing": "Вижу платёж {amount} тенге, полис по нему не выпущен. Передаю специалисту — полис оформят или вернут деньги."
+        },
+        "kk": {
+          "opening": "Анықтап көрейік. Төлем қашан және қанша сомаға болды?",
+          "closing": "{amount} теңге төлемді көріп тұрмын, ол бойынша полис шықпаған. Маманға беремін — полис рәсімделеді немесе ақша қайтарылады."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC31",
+      "slug": "payment_methods",
+      "name": "Payment methods and installments",
+      "domain": "general",
+      "category": "info",
+      "description": "Client asks how to pay for a policy or whether installments are available.",
+      "not_this_if": [
+        {
+          "condition": "Money was charged but the policy was not issued",
+          "use_instead": "SC30"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [],
+        "optional": [
+          "product_type"
+        ]
+      },
+      "actions": [
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Как можно оплатить полис?",
+          "Есть рассрочка на каско?",
+          "Можно оплатить наличными в офисе?",
+          "Можно платить за страховку частями?"
+        ],
+        "kk": [
+          "Полисті қалай төлеуге болады?",
+          "КАСКО-ға бөліп төлеу бар ма?",
+          "Кеңседе қолма-қол төлеуге бола ма?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Подскажу.",
+          "closing": "{answer}"
+        },
+        "kk": {
+          "opening": "Айтып берейін.",
+          "closing": "{answer}"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC32",
+      "slug": "bonus_malus",
+      "name": "Bonus-malus class and price change",
+      "domain": "auto",
+      "category": "info",
+      "description": "Client asks about their bonus-malus class or why the OGPO price changed.",
+      "not_this_if": [
+        {
+          "condition": "Client just wants a new price quote",
+          "use_instead": "SC01"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "iin"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "get_bm_class",
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Почему подорожала обязательная страховка?",
+          "Какой у меня класс бонус-малус?",
+          "В прошлом году платил меньше, почему так дорого?",
+          "Как узнать свой коэффициент?"
+        ],
+        "kk": [
+          "Міндетті сақтандыру неге қымбаттады?",
+          "Менің бонус-малус сыныбым қандай?",
+          "Былтыр аз төлегенмін, неге қымбат?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Сейчас посмотрю. Назовите ваш ИИН.",
+          "closing": "У вас класс {bm_class}. Класс растёт за каждый год без аварий по вашей вине и снижается после ДТП по вашей вине."
+        },
+        "kk": {
+          "opening": "Қазір қарайын. ЖСН-іңізді айтыңызшы.",
+          "closing": "Сіздің сыныбыңыз {bm_class}. Өз кінәңізбен апат болмаған әр жыл үшін сынып өседі, кінәлі ЖКО-дан кейін төмендейді."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC33",
+      "slug": "offices",
+      "name": "Office addresses and hours",
+      "domain": "general",
+      "category": "info",
+      "description": "Client asks where an office is or what the working hours are.",
+      "not_this_if": [
+        {
+          "condition": "Client asks where vehicles are inspected for a claim",
+          "use_instead": "SC20"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "city"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "get_offices",
+        "send_sms"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Где ваш офис в Алматы?",
+          "До скольки вы работаете в субботу?",
+          "Какой адрес отделения в Шымкенте?",
+          "Работаете ли вы в выходные?"
+        ],
+        "kk": [
+          "Алматыдағы кеңселеріңіз қайда?",
+          "Сенбі күні сағат нешеге дейін жұмыс істейсіздер?",
+          "Шымкенттегі бөлімшенің мекенжайы қандай?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Подскажу. В каком городе?",
+          "closing": "Офис: {address}. Работает {hours}."
+        },
+        "kk": {
+          "opening": "Айтып берейін. Қай қалада?",
+          "closing": "Кеңсе: {address}. Жұмыс уақыты: {hours}."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC34",
+      "slug": "app_help",
+      "name": "Mobile app and account help",
+      "domain": "general",
+      "category": "info",
+      "description": "Client has trouble with the mobile app or personal account: login, SMS code, errors.",
+      "not_this_if": [
+        {
+          "condition": "Client cannot find the DMS card specifically",
+          "use_instead": "SC24"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "kb_lookup",
+        "send_sms",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "problem not solved by standard steps",
+        "queue": "operator_general"
+      },
+      "examples": {
+        "ru": [
+          "Не могу войти в приложение",
+          "Не приходит код из SMS",
+          "Приложение выдаёт ошибку при оплате",
+          "Как зарегистрироваться в личном кабинете?"
+        ],
+        "kk": [
+          "Қосымшаға кіре алмай жатырмын",
+          "SMS код келмейді",
+          "Жеке кабинетке қалай тіркелемін?"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Давайте разберёмся. Что именно не получается?",
+          "closing": "{answer}"
+        },
+        "kk": {
+          "opening": "Анықтап көрейік. Нақты не болмай жатыр?",
+          "closing": "{answer}"
+        }
+      }
+    },
+    {
+      "scenario_id": "SC35",
+      "slug": "service_complaint",
+      "name": "Service complaint",
+      "domain": "general",
+      "category": "feedback",
+      "description": "Client complains about service quality: rudeness, no callback, delays.",
+      "not_this_if": [
+        {
+          "condition": "Client disagrees with the claim decision or amount",
+          "use_instead": "SC19"
+        },
+        {
+          "condition": "Client clearly asks to terminate the policy",
+          "use_instead": "SC28"
+        }
+      ],
+      "priority": "high",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "complaint_text"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "create_complaint",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "client asks for a person or is very upset",
+        "queue": "complaints_team"
+      },
+      "examples": {
+        "ru": [
+          "Хочу оставить жалобу на вашего сотрудника",
+          "Мне обещали перезвонить и не перезвонили",
+          "Сколько можно ждать? Ужасное обслуживание",
+          "Оператор нагрубил мне"
+        ],
+        "kk": [
+          "Қызметкеріңізге шағым қалдырғым келеді",
+          "Қайта хабарласамыз деп, хабарласпады",
+          "Қызмет көрсету өте нашар"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Мне очень жаль, что так вышло. Расскажите, пожалуйста, что произошло.",
+          "closing": "Жалоба {ticket_id} зарегистрирована, руководитель смены свяжется с вами сегодня."
+        },
+        "kk": {
+          "opening": "Солай болғанына өкінемін. Не болғанын айтып беріңізші.",
+          "closing": "{ticket_id} шағымы тіркелді, ауысым жетекшісі бүгін хабарласады."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC36",
+      "slug": "callback_request",
+      "name": "Callback request",
+      "domain": "general",
+      "category": "contact",
+      "description": "Client asks to be called back later at a convenient time. The phone number is only needed for the callback; do not run full client identification.",
+      "not_this_if": [
+        {
+          "condition": "Client wants a person right now",
+          "use_instead": "SC37"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "phone",
+          "callback_time"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "create_callback"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Перезвоните мне позже, сейчас неудобно",
+          "Можете набрать после шести?",
+          "Я за рулём, перезвоните через час",
+          "Закажите мне обратный звонок"
+        ],
+        "kk": [
+          "Кейінірек хабарласыңызшы, қазір ыңғайсыз",
+          "Сағат алтыдан кейін хабарласа аласыз ба?",
+          "Көлік жүргізіп келемін, бір сағаттан кейін хабарласыңызшы"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Конечно. Когда вам удобно?",
+          "closing": "Хорошо, перезвоним {callback_time}."
+        },
+        "kk": {
+          "opening": "Әрине. Қашан ыңғайлы?",
+          "closing": "Жақсы, {callback_time} хабарласамыз."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC37",
+      "slug": "operator_request",
+      "name": "Request a human operator",
+      "domain": "general",
+      "category": "contact",
+      "description": "Client explicitly asks to talk to a human operator.",
+      "not_this_if": [
+        {
+          "condition": "Client wants to be called later",
+          "use_instead": "SC36"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": true,
+      "requires_identification": false,
+      "slots": {
+        "required": [],
+        "optional": [
+          "topic"
+        ]
+      },
+      "actions": [
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "always",
+        "queue": "operator_general"
+      },
+      "examples": {
+        "ru": [
+          "Соедините с оператором",
+          "Хочу поговорить с живым человеком",
+          "Переключите на специалиста",
+          "Дайте менеджера"
+        ],
+        "kk": [
+          "Операторға қосыңызшы",
+          "Тірі адаммен сөйлескім келеді",
+          "Маманға қосыңызшы"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Конечно, соединяю. Коротко подскажите, по какому вопросу, чтобы специалист был в курсе?",
+          "closing": "Соединяю, специалист уже видит суть вопроса."
+        },
+        "kk": {
+          "opening": "Әрине, қосамын. Маман хабардар болуы үшін сұрағыңызды қысқаша айтасыз ба?",
+          "closing": "Қосып жатырмын, маман сұрағыңыздың мәнін көріп отыр."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC38",
+      "slug": "fraud_report",
+      "name": "Suspicious call or fraud report",
+      "domain": "general",
+      "category": "security",
+      "description": "Client received a suspicious call or message in the name of Saqta, or suspects fraud.",
+      "not_this_if": [
+        {
+          "condition": "Client simply wants to check whether the policy is active",
+          "use_instead": "SC25"
+        }
+      ],
+      "priority": "urgent",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "fraud_details"
+        ],
+        "optional": [
+          "phone"
+        ]
+      },
+      "actions": [
+        "report_fraud",
+        "kb_lookup",
+        "transfer_to_operator"
+      ],
+      "requires_confirmation": false,
+      "handoff": {
+        "when": "client already shared codes or card data",
+        "queue": "security_team"
+      },
+      "examples": {
+        "ru": [
+          "Мне звонили от вашего имени и просили код из SMS",
+          "Пришло SMS, что страховка заблокирована, это от вас?",
+          "Какой-то агент просит перевести деньги на карту",
+          "Подозрительный звонок якобы из страховой"
+        ],
+        "kk": [
+          "Сіздердің атыңыздан хабарласып, SMS код сұрады",
+          "Полисіңіз жойылды деген хабарлама келді, рас па?",
+          "Бір агент картаға ақша аударуды сұрап жатыр"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Хорошо, что вы уточнили. Мы никогда не просим коды из SMS и данные карты. Что именно вам сказали?",
+          "closing": "Обращение {ticket_id} передано в службу безопасности. Никому не сообщайте коды."
+        },
+        "kk": {
+          "opening": "Нақтылағаныңыз дұрыс болды. Біз ешқашан SMS код пен карта деректерін сұрамаймыз. Сізге не айтты?",
+          "closing": "{ticket_id} өтініші қауіпсіздік қызметіне берілді. Кодтарды ешкімге айтпаңыз."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC39",
+      "slug": "document_request",
+      "name": "Certificate or document copy request",
+      "domain": "general",
+      "category": "servicing",
+      "description": "Client needs a certificate (e.g. for an embassy), a duplicate or a copy of the contract.",
+      "not_this_if": [
+        {
+          "condition": "Policy document simply did not arrive after purchase",
+          "use_instead": "SC26"
+        },
+        {
+          "condition": "Client asks which documents to submit for a claim",
+          "use_instead": "SC18"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": true,
+      "slots": {
+        "required": [
+          "policy_number",
+          "document_type",
+          "email"
+        ],
+        "optional": []
+      },
+      "actions": [
+        "find_client",
+        "request_document"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Нужна справка о страховке для посольства",
+          "Пришлите копию договора",
+          "Мне нужен дубликат полиса",
+          "Нужна справка об оплате страховки"
+        ],
+        "kk": [
+          "Елшілікке сақтандыру туралы анықтама керек",
+          "Шарттың көшірмесін жіберіңізші",
+          "Полистің телнұсқасы керек"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Подготовлю. Какой документ нужен и на какую почту отправить?",
+          "closing": "Документ отправлен на {sent_to}."
+        },
+        "kk": {
+          "opening": "Дайындап берейін. Қандай құжат керек және қай поштаға жіберейін?",
+          "closing": "Құжат {sent_to} поштасына жіберілді."
+        }
+      }
+    },
+    {
+      "scenario_id": "SC40",
+      "slug": "terms_explanation",
+      "name": "Policy terms explanation",
+      "domain": "general",
+      "category": "info",
+      "description": "Client asks to explain insurance terms: deductible, exclusions, limits, what is not covered.",
+      "not_this_if": [
+        {
+          "condition": "Client asks whether a specific medical service is covered by their DMS",
+          "use_instead": "SC22"
+        }
+      ],
+      "priority": "normal",
+      "fast_path_eligible": false,
+      "requires_identification": false,
+      "slots": {
+        "required": [
+          "topic"
+        ],
+        "optional": [
+          "product_type"
+        ]
+      },
+      "actions": [
+        "kb_lookup"
+      ],
+      "requires_confirmation": false,
+      "handoff": null,
+      "examples": {
+        "ru": [
+          "Что такое франшиза?",
+          "В каких случаях вы не платите?",
+          "Какой лимит выплаты по полису?",
+          "Объясните, что не покрывает каско"
+        ],
+        "kk": [
+          "Франшиза деген не?",
+          "Қандай жағдайда төлем жасамайсыздар?",
+          "КАСКО нені өтемейді, түсіндіріңізші"
+        ]
+      },
+      "responses": {
+        "ru": {
+          "opening": "Объясню.",
+          "closing": "{answer}"
+        },
+        "kk": {
+          "opening": "Түсіндірейін.",
+          "closing": "{answer}"
+        }
+      }
+    }
+  ],
+  "system_intents": [
+    {
+      "id": "SYS_OUT_OF_SCOPE",
+      "description": "Request is not about Saqta insurance services (loans, weather, jobs, life insurance which is not offered).",
+      "behavior": "Say politely that Saqta cannot help with this, suggest what the bot can do.",
+      "response": {
+        "ru": "С этим я, к сожалению, не помогу. Могу подсказать по страховке авто, здоровья, жилья и поездок.",
+        "kk": "Өкінішке қарай, бұл сұраққа көмектесе алмаймын. Көлік, денсаулық, тұрғын үй және сапар сақтандыруы бойынша көмектесемін."
+      }
+    },
+    {
+      "id": "SYS_UNCLEAR",
+      "description": "Intent cannot be determined with enough confidence.",
+      "behavior": "Ask one short clarifying question, offering the 2 most likely options.",
+      "response": {
+        "ru": "Уточните, пожалуйста: вы хотите {option_a} или {option_b}?",
+        "kk": "Нақтылап жіберіңізші: {option_a} керек пе, әлде {option_b} ме?"
+      }
+    },
+    {
+      "id": "SYS_GOODBYE",
+      "description": "Client ends the conversation.",
+      "behavior": "Thank and close.",
+      "response": {
+        "ru": "Спасибо за обращение! Хорошего дня.",
+        "kk": "Хабарласқаныңызға рақмет! Күніңіз сәтті өтсін."
+      }
+    }
+  ]
+}

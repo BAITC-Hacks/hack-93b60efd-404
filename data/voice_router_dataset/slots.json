@@ -1,0 +1,460 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "slots": [
+    {
+      "name": "phone",
+      "type": "string",
+      "description": "Client phone number, normalized to +7XXXXXXXXXX",
+      "pattern": "^\\+7\\d{10}$",
+      "prompt": {
+        "ru": "Подскажите, пожалуйста, ваш номер телефона.",
+        "kk": "Телефон нөміріңізді айтып жіберіңізші."
+      }
+    },
+    {
+      "name": "iin",
+      "type": "string",
+      "description": "Individual identification number (IIN), 12 digits",
+      "pattern": "^\\d{12}$",
+      "prompt": {
+        "ru": "Назовите, пожалуйста, ваш ИИН.",
+        "kk": "ЖСН-іңізді айтып жіберіңізші."
+      }
+    },
+    {
+      "name": "policy_number",
+      "type": "string",
+      "description": "Policy number",
+      "pattern": "^SQ-(OGPO|CASCO|TRVL|PROP|NS|DMS)-\\d{6}$",
+      "prompt": {
+        "ru": "Назовите номер полиса, если он у вас под рукой.",
+        "kk": "Полис нөмірі қолыңызда болса, айтып жіберіңізші."
+      }
+    },
+    {
+      "name": "claim_number",
+      "type": "string",
+      "description": "Claim number",
+      "pattern": "^CL-\\d{6}$",
+      "prompt": {
+        "ru": "Назовите, пожалуйста, номер заявления.",
+        "kk": "Өтініш нөмірін айтып жіберіңізші."
+      }
+    },
+    {
+      "name": "vehicle_plate",
+      "type": "string",
+      "description": "Vehicle registration plate",
+      "pattern": "^\\d{3}[A-Z]{2,3}\\d{2}$",
+      "prompt": {
+        "ru": "Какой госномер у автомобиля?",
+        "kk": "Көліктің мемлекеттік нөмірі қандай?"
+      }
+    },
+    {
+      "name": "culprit_vehicle_plate",
+      "type": "string",
+      "description": "Plate of the at-fault vehicle in a road accident",
+      "pattern": "^\\d{3}[A-Z]{2,3}\\d{2}$",
+      "prompt": {
+        "ru": "Какой госномер у машины виновника?",
+        "kk": "Кінәлі көліктің мемлекеттік нөмірі қандай?"
+      }
+    },
+    {
+      "name": "vehicle_type",
+      "type": "enum",
+      "description": "Vehicle type",
+      "values": [
+        "car",
+        "truck",
+        "motorcycle"
+      ],
+      "prompt": {
+        "ru": "Это легковой автомобиль?",
+        "kk": "Бұл жеңіл көлік пе?"
+      }
+    },
+    {
+      "name": "region",
+      "type": "enum",
+      "description": "Vehicle registration region for OGPO pricing",
+      "values": [
+        "almaty",
+        "astana",
+        "other"
+      ],
+      "prompt": {
+        "ru": "В каком городе зарегистрирована машина?",
+        "kk": "Көлік қай қалада тіркелген?"
+      }
+    },
+    {
+      "name": "drivers_iin",
+      "type": "list",
+      "description": "IINs of all drivers to be listed in the policy",
+      "pattern": "^\\d{12}$",
+      "prompt": {
+        "ru": "Кто будет за рулём? Назовите ИИН каждого водителя.",
+        "kk": "Көлікті кім жүргізеді? Әр жүргізушінің ЖСН-ін айтыңызшы."
+      }
+    },
+    {
+      "name": "new_driver_iin",
+      "type": "string",
+      "description": "IIN of the driver to add",
+      "pattern": "^\\d{12}$",
+      "prompt": {
+        "ru": "Назовите ИИН водителя, которого нужно добавить.",
+        "kk": "Қосылатын жүргізушінің ЖСН-ін айтыңызшы."
+      }
+    },
+    {
+      "name": "car_value",
+      "type": "integer",
+      "description": "Market value of the car, KZT",
+      "prompt": {
+        "ru": "Сколько примерно стоит автомобиль сейчас?",
+        "kk": "Көлік қазір шамамен қанша тұрады?"
+      }
+    },
+    {
+      "name": "car_year",
+      "type": "integer",
+      "description": "Car manufacturing year",
+      "prompt": {
+        "ru": "Какого года выпуска машина?",
+        "kk": "Көлік нешінші жылы шыққан?"
+      }
+    },
+    {
+      "name": "franchise",
+      "type": "enum",
+      "description": "CASCO deductible, KZT",
+      "values": [
+        0,
+        50000,
+        100000
+      ],
+      "prompt": {
+        "ru": "Франшизу рассмотрите? Есть варианты без неё, 50 или 100 тысяч тенге.",
+        "kk": "Франшиза қарастырасыз ба? Франшизасыз, 50 немесе 100 мың теңге нұсқалары бар."
+      }
+    },
+    {
+      "name": "product_type",
+      "type": "enum",
+      "description": "Insurance product",
+      "values": [
+        "ogpo",
+        "casco",
+        "travel",
+        "property",
+        "accident",
+        "dms"
+      ],
+      "prompt": {
+        "ru": "О какой страховке идёт речь?",
+        "kk": "Қай сақтандыру туралы сөйлесіп тұрмыз?"
+      }
+    },
+    {
+      "name": "trip_country",
+      "type": "string",
+      "description": "Destination country",
+      "prompt": {
+        "ru": "В какую страну едете?",
+        "kk": "Қай елге барасыз?"
+      }
+    },
+    {
+      "name": "trip_start",
+      "type": "date",
+      "description": "Trip start date",
+      "prompt": {
+        "ru": "С какого числа поездка?",
+        "kk": "Сапар нешесінен басталады?"
+      }
+    },
+    {
+      "name": "trip_end",
+      "type": "date",
+      "description": "Trip end date",
+      "prompt": {
+        "ru": "И до какого числа?",
+        "kk": "Нешесіне дейін?"
+      }
+    },
+    {
+      "name": "travelers_count",
+      "type": "integer",
+      "description": "Number of travelers",
+      "prompt": {
+        "ru": "Сколько человек едет?",
+        "kk": "Неше адам барасыздар?"
+      }
+    },
+    {
+      "name": "traveler_max_age",
+      "type": "integer",
+      "description": "Age of the oldest traveler",
+      "prompt": {
+        "ru": "Сколько лет самому старшему путешественнику?",
+        "kk": "Ең үлкен жолаушы нешеде?"
+      }
+    },
+    {
+      "name": "property_type",
+      "type": "enum",
+      "description": "Property type",
+      "values": [
+        "apartment",
+        "house"
+      ],
+      "prompt": {
+        "ru": "Это квартира или частный дом?",
+        "kk": "Бұл пәтер ме, әлде жеке үй ме?"
+      }
+    },
+    {
+      "name": "property_address",
+      "type": "string",
+      "description": "Property address",
+      "prompt": {
+        "ru": "Назовите адрес.",
+        "kk": "Мекенжайын айтыңызшы."
+      }
+    },
+    {
+      "name": "sum_insured",
+      "type": "enum",
+      "description": "Sum insured, KZT",
+      "values": [
+        1000000,
+        3000000,
+        5000000,
+        10000000,
+        20000000
+      ],
+      "prompt": {
+        "ru": "На какую сумму хотите застраховать?",
+        "kk": "Қанша сомаға сақтандырғыңыз келеді?"
+      }
+    },
+    {
+      "name": "incident_date",
+      "type": "date",
+      "description": "Date of the insured event",
+      "prompt": {
+        "ru": "Когда это произошло?",
+        "kk": "Бұл қашан болды?"
+      }
+    },
+    {
+      "name": "incident_description",
+      "type": "text",
+      "description": "Short description of what happened",
+      "prompt": {
+        "ru": "Расскажите коротко, что случилось.",
+        "kk": "Не болғанын қысқаша айтып беріңізші."
+      }
+    },
+    {
+      "name": "injured",
+      "type": "boolean",
+      "description": "Whether anyone is injured",
+      "prompt": {
+        "ru": "Все целы? Есть пострадавшие?",
+        "kk": "Барлығы аман ба? Зардап шеккендер бар ма?"
+      }
+    },
+    {
+      "name": "location",
+      "type": "string",
+      "description": "Where the client is right now",
+      "prompt": {
+        "ru": "Где вы сейчас находитесь?",
+        "kk": "Қазір қай жердесіз?"
+      }
+    },
+    {
+      "name": "city",
+      "type": "enum",
+      "description": "City",
+      "values": [
+        "Almaty",
+        "Astana",
+        "Shymkent",
+        "Karaganda",
+        "Aktobe",
+        "Atyrau",
+        "Pavlodar",
+        "Oskemen"
+      ],
+      "prompt": {
+        "ru": "В каком вы городе?",
+        "kk": "Қай қаладасыз?"
+      }
+    },
+    {
+      "name": "email",
+      "type": "string",
+      "description": "Email",
+      "pattern": "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+      "prompt": {
+        "ru": "Подскажите вашу электронную почту.",
+        "kk": "Электрондық поштаңызды айтыңызшы."
+      }
+    },
+    {
+      "name": "contact_field",
+      "type": "enum",
+      "description": "Which contact detail to change",
+      "values": [
+        "phone",
+        "email",
+        "address"
+      ],
+      "prompt": {
+        "ru": "Что именно нужно изменить: телефон, почту или адрес?",
+        "kk": "Нені өзгерту керек: телефон, пошта ма, әлде мекенжай ма?"
+      }
+    },
+    {
+      "name": "new_value",
+      "type": "string",
+      "description": "New value of the contact detail",
+      "prompt": {
+        "ru": "Назовите новые данные.",
+        "kk": "Жаңа деректерді айтыңызшы."
+      }
+    },
+    {
+      "name": "payment_date",
+      "type": "date",
+      "description": "Date of payment",
+      "prompt": {
+        "ru": "Когда вы оплачивали?",
+        "kk": "Қашан төледіңіз?"
+      }
+    },
+    {
+      "name": "payment_amount",
+      "type": "integer",
+      "description": "Paid amount, KZT",
+      "prompt": {
+        "ru": "На какую сумму был платёж?",
+        "kk": "Қанша сома төледіңіз?"
+      }
+    },
+    {
+      "name": "callback_time",
+      "type": "string",
+      "description": "Preferred callback time",
+      "prompt": {
+        "ru": "Когда вам удобно, чтобы перезвонили?",
+        "kk": "Сізге қашан қайта хабарласқан ыңғайлы?"
+      }
+    },
+    {
+      "name": "doctor_specialty",
+      "type": "string",
+      "description": "Doctor specialty",
+      "prompt": {
+        "ru": "К какому врачу нужно?",
+        "kk": "Қай дәрігерге бару керек?"
+      }
+    },
+    {
+      "name": "service_name",
+      "type": "string",
+      "description": "Medical service or item to check coverage for",
+      "prompt": {
+        "ru": "Какую услугу хотите проверить?",
+        "kk": "Қай қызметті тексергіңіз келеді?"
+      }
+    },
+    {
+      "name": "preferred_date",
+      "type": "date",
+      "description": "Preferred date",
+      "prompt": {
+        "ru": "На какой день вам удобно?",
+        "kk": "Қай күн сізге ыңғайлы?"
+      }
+    },
+    {
+      "name": "company_name",
+      "type": "string",
+      "description": "Company name",
+      "prompt": {
+        "ru": "Как называется ваша компания?",
+        "kk": "Компанияңыздың атауы қандай?"
+      }
+    },
+    {
+      "name": "employees_count",
+      "type": "integer",
+      "description": "Number of employees",
+      "prompt": {
+        "ru": "Сколько сотрудников планируете застраховать?",
+        "kk": "Қанша қызметкерді сақтандырмақсыз?"
+      }
+    },
+    {
+      "name": "cancel_reason",
+      "type": "text",
+      "description": "Reason for cancellation",
+      "prompt": {
+        "ru": "Подскажите, почему решили расторгнуть?",
+        "kk": "Шартты неге бұзғыңыз келеді?"
+      }
+    },
+    {
+      "name": "complaint_text",
+      "type": "text",
+      "description": "Essence of the complaint or disagreement",
+      "prompt": {
+        "ru": "Расскажите, пожалуйста, что именно произошло.",
+        "kk": "Не болғанын толығырақ айтып беріңізші."
+      }
+    },
+    {
+      "name": "fraud_details",
+      "type": "text",
+      "description": "What the suspicious caller said or asked",
+      "prompt": {
+        "ru": "Что именно вам сказали и что просили?",
+        "kk": "Сізге не айтты, не сұрады?"
+      }
+    },
+    {
+      "name": "document_type",
+      "type": "enum",
+      "description": "Requested document",
+      "values": [
+        "policy_duplicate",
+        "contract_copy",
+        "embassy_certificate",
+        "payment_certificate"
+      ],
+      "prompt": {
+        "ru": "Какой документ вам нужен?",
+        "kk": "Сізге қандай құжат керек?"
+      }
+    },
+    {
+      "name": "topic",
+      "type": "string",
+      "description": "Topic of an informational question",
+      "prompt": {
+        "ru": "Уточните, что именно вас интересует?",
+        "kk": "Нақты не қызықтырады?"
+      }
+    }
+  ]
+}

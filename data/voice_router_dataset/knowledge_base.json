@@ -1,0 +1,479 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "company": {
+    "name": "Saqta Insurance",
+    "legal_form": "Joint-stock company (fictional)",
+    "line_of_business": "General (non-life) insurance for individuals and companies in Kazakhstan",
+    "founded": 2009,
+    "headquarters": "Almaty",
+    "branches": 8,
+    "clients": 600000,
+    "employees": 1200,
+    "contact_center": {
+      "phone": "+7 727 000 7575",
+      "sales_hours": "Mon-Sat 08:00-20:00",
+      "claims_and_assistance_hours": "24/7"
+    },
+    "website": "saqta-insurance.example",
+    "mobile_app": "Saqta",
+    "claims_email": "claims@saqta-insurance.example",
+    "service_languages": [
+      "kk",
+      "ru"
+    ],
+    "not_offered": [
+      "life insurance",
+      "pension annuities",
+      "loans and deposits",
+      "mortgage lending"
+    ]
+  },
+  "offices": [
+    {
+      "city": "Almaty",
+      "address": "Abai Ave 150",
+      "hours": "Mon-Fri 09:00-18:00, Sat 10:00-15:00"
+    },
+    {
+      "city": "Astana",
+      "address": "Mangilik El Ave 55",
+      "hours": "Mon-Fri 09:00-18:00, Sat 10:00-15:00"
+    },
+    {
+      "city": "Shymkent",
+      "address": "Tauke Khan Ave 40",
+      "hours": "Mon-Fri 09:00-18:00"
+    },
+    {
+      "city": "Karaganda",
+      "address": "Bukhar Zhyrau Ave 60",
+      "hours": "Mon-Fri 09:00-18:00"
+    },
+    {
+      "city": "Aktobe",
+      "address": "Abilkaiyr Khan Ave 30",
+      "hours": "Mon-Fri 09:00-18:00"
+    },
+    {
+      "city": "Atyrau",
+      "address": "Satpayev Ave 20",
+      "hours": "Mon-Fri 09:00-18:00"
+    },
+    {
+      "city": "Pavlodar",
+      "address": "Lomov St 45",
+      "hours": "Mon-Fri 09:00-18:00"
+    },
+    {
+      "city": "Oskemen",
+      "address": "Kazakhstan St 70",
+      "hours": "Mon-Fri 09:00-18:00"
+    }
+  ],
+  "inspection_points": [
+    {
+      "city": "Almaty",
+      "address": "Ryskulov Ave 200",
+      "hours": "Mon-Sat 09:00-17:00"
+    },
+    {
+      "city": "Astana",
+      "address": "Kabanbay Batyr Ave 80",
+      "hours": "Mon-Sat 09:00-17:00"
+    },
+    {
+      "city": "other",
+      "address": "City office parking, by appointment",
+      "hours": "Mon-Fri 10:00-16:00"
+    }
+  ],
+  "products": {
+    "ogpo": {
+      "name": "OGPO - mandatory motor third-party liability",
+      "covers": "Damage the driver causes to other people's health and property in a road accident. Own car is not covered.",
+      "terms_months": [
+        12,
+        6
+      ],
+      "pricing": {
+        "formula": "base_by_region * vehicle_type_coef * bm_coef(worst class among listed drivers) * term_coef",
+        "base_by_region_kzt": {
+          "almaty": 38000,
+          "astana": 34000,
+          "other": 26000
+        },
+        "region_by_plate_code": {
+          "02": "almaty",
+          "01": "astana",
+          "default": "other"
+        },
+        "vehicle_type_coef": {
+          "car": 1.0,
+          "truck": 1.4,
+          "motorcycle": 0.6
+        },
+        "bm_coef": {
+          "M": 2.0,
+          "0": 1.2,
+          "1": 1.2,
+          "2": 1.2,
+          "3": 1.0,
+          "4": 1.0,
+          "5": 1.0,
+          "6": 0.8,
+          "7": 0.8,
+          "8": 0.8,
+          "9": 0.8,
+          "10": 0.6,
+          "11": 0.6,
+          "12": 0.6,
+          "13": 0.6
+        },
+        "term_coef": {
+          "12": 1.0,
+          "6": 0.6
+        }
+      },
+      "policy_delivery": "Electronic policy by SMS and email right after payment. Also visible in the app."
+    },
+    "casco": {
+      "name": "CASCO - voluntary car insurance",
+      "packages": {
+        "Standard": "Damage in accidents (any fault), theft, total loss, natural disasters, falling objects, vandalism.",
+        "Lite": "Theft and total loss only."
+      },
+      "pricing": {
+        "formula": "car_value * rate_by_car_age * franchise_coef * package_coef",
+        "car_age": "policy start year - car_year",
+        "rate_by_car_age": {
+          "0-3": 0.04,
+          "4-7": 0.05,
+          "8-10": 0.065
+        },
+        "max_car_age": {
+          "Standard": 10,
+          "Lite": 15
+        },
+        "franchise_coef": {
+          "0": 1.0,
+          "50000": 0.9,
+          "100000": 0.8
+        },
+        "package_coef": {
+          "Standard": 1.0,
+          "Lite": 0.4
+        }
+      },
+      "exclusions": [
+        "Driving under the influence",
+        "Driver not listed in the policy",
+        "Intentional damage",
+        "Wear and tear, mechanical breakdown",
+        "Using the car as a taxi unless declared"
+      ]
+    },
+    "travel": {
+      "name": "Travel medical insurance",
+      "zones": {
+        "A": {
+          "countries": "CIS countries and Georgia",
+          "coverage": "15 000 USD",
+          "rate_per_day_kzt": 450
+        },
+        "B": {
+          "countries": "Schengen countries and the UK",
+          "coverage": "30 000 EUR",
+          "rate_per_day_kzt": 900
+        },
+        "C": {
+          "countries": "World excluding USA and Canada (e.g. Turkey, UAE, Thailand, Egypt)",
+          "coverage": "50 000 USD",
+          "rate_per_day_kzt": 1100
+        },
+        "D": {
+          "countries": "World including USA and Canada",
+          "coverage": "100 000 USD",
+          "rate_per_day_kzt": 1600
+        }
+      },
+      "pricing": {
+        "formula": "rate_per_day * days (inclusive) * travelers * age_coef",
+        "age_coef": {
+          "0-64": 1.0,
+          "65-75": 2.0
+        },
+        "over_75": "Only via operator"
+      },
+      "notes": [
+        "Traveler passport details are entered on the payment page.",
+        "In a medical event abroad the client must first call 24/7 medical assistance; self-paid bills are reimbursed only if agreed in advance.",
+        "An English certificate for the embassy is available on request."
+      ]
+    },
+    "property": {
+      "name": "Home insurance",
+      "covers": "Fire, water damage, theft, natural disasters, liability to neighbours.",
+      "price_per_year_kzt": {
+        "5000000": 15000,
+        "10000000": 25000,
+        "20000000": 42000
+      },
+      "house_coef": 1.5,
+      "exclusions": [
+        "Damage due to unauthorized reconstruction",
+        "Wear and tear",
+        "Intentional damage"
+      ]
+    },
+    "accident": {
+      "name": "Personal accident insurance",
+      "covers": "Injuries and disability caused by an accident, 24/7 worldwide, including sports at amateur level.",
+      "price_per_year_kzt": {
+        "1000000": 6000,
+        "3000000": 15000,
+        "5000000": 22000
+      },
+      "exclusions": [
+        "Professional sports",
+        "Intoxication",
+        "Self-harm",
+        "Illness (not an accident)"
+      ]
+    },
+    "dms": {
+      "name": "Voluntary health insurance (DMS)",
+      "channels": "Mostly corporate (via employer). Individual packages are also available.",
+      "individual_price_per_year_kzt": {
+        "Basic": 180000,
+        "Comfort": 320000
+      },
+      "packages": {
+        "Basic": {
+          "covered": [
+            "Therapist visits",
+            "Specialists by therapist referral",
+            "Basic lab tests by referral",
+            "Emergency care",
+            "Emergency hospitalization"
+          ],
+          "not_covered": [
+            "MRI and CT",
+            "Dentistry",
+            "Planned hospitalization",
+            "Outpatient medications"
+          ]
+        },
+        "Comfort": {
+          "covered": [
+            "Therapist visits",
+            "Specialists without referral (ENT, cardiologist, gynecologist, etc.)",
+            "Lab tests by doctor's referral",
+            "Ultrasound",
+            "MRI and CT by referral, up to 2 per year",
+            "Dental treatment (caries, extraction)",
+            "Emergency and planned hospitalization",
+            "Medications during hospitalization"
+          ],
+          "not_covered": [
+            "Dental prosthetics and implants",
+            "Cosmetology",
+            "Outpatient medications"
+          ]
+        }
+      },
+      "e_card": "Electronic DMS card is in the app (My policies). It can be sent by SMS. Showing it on screen is enough."
+    }
+  },
+  "clinics": [
+    {
+      "name": "Aqsu Clinic",
+      "city": "Almaty",
+      "address": "Tole Bi St 180",
+      "specialties": [
+        "therapist",
+        "ENT",
+        "dentist",
+        "gynecologist",
+        "cardiologist",
+        "lab"
+      ]
+    },
+    {
+      "name": "Almaty Family Med",
+      "city": "Almaty",
+      "address": "Rozybakiev St 95",
+      "specialties": [
+        "therapist",
+        "pediatrician",
+        "lab"
+      ]
+    },
+    {
+      "name": "Saulet Medical",
+      "city": "Astana",
+      "address": "Turan Ave 30",
+      "specialties": [
+        "therapist",
+        "ENT",
+        "cardiologist",
+        "lab",
+        "ultrasound"
+      ]
+    },
+    {
+      "name": "Nur Med Astana",
+      "city": "Astana",
+      "address": "Kenesary St 40",
+      "specialties": [
+        "therapist",
+        "dentist",
+        "gynecologist"
+      ]
+    },
+    {
+      "name": "Emdeu Center",
+      "city": "Shymkent",
+      "address": "Baitursynov St 15",
+      "specialties": [
+        "therapist",
+        "ENT",
+        "lab"
+      ]
+    },
+    {
+      "name": "Jana Med",
+      "city": "Karaganda",
+      "address": "Erubaev St 22",
+      "specialties": [
+        "therapist",
+        "dentist",
+        "lab"
+      ]
+    }
+  ],
+  "claims": {
+    "notify_deadline": "As soon as possible, no later than 5 working days after the event.",
+    "decision_time": "15 working days after all documents are received.",
+    "payout_time": "5 working days after a positive decision, to the client's bank account.",
+    "road_accident_now": [
+      "If anyone is injured, call 112 first.",
+      "Turn on hazard lights and place a warning triangle.",
+      "Do not move the cars until the accident is registered as required by law.",
+      "Take photos of the scene, damage and plates of all cars.",
+      "Exchange contacts and policy numbers with the other driver.",
+      "Call Saqta 24/7 to register the claim."
+    ],
+    "documents": {
+      "ogpo_victim": [
+        "ID card",
+        "Driving licence",
+        "Vehicle registration certificate",
+        "Road accident documents from the police",
+        "Bank details",
+        "Photos of the damage"
+      ],
+      "casco": [
+        "ID card",
+        "Driving licence",
+        "Vehicle registration certificate",
+        "Police documents (if police was involved)",
+        "Photos of the damage"
+      ],
+      "property": [
+        "ID card",
+        "Policy number",
+        "Act from the building management company (for water damage) or fire service report (for fire)",
+        "Photos of the damage",
+        "Bank details"
+      ],
+      "accident": [
+        "ID card",
+        "Medical certificate from the trauma centre or hospital",
+        "Bank details"
+      ],
+      "travel": [
+        "Policy number",
+        "Medical documents from abroad",
+        "Receipts (only for expenses agreed with assistance)"
+      ]
+    },
+    "submission": "Upload in the app (My claims) or send to claims@saqta-insurance.example with the claim number. Photos are accepted.",
+    "dispute": "Written disagreement is registered by phone, app or office and reviewed within 15 working days. Client may also appeal to the insurance ombudsman."
+  },
+  "payments": {
+    "methods": [
+      "Bank card in the app or on the website",
+      "Payment link by SMS",
+      "Bank transfer (companies)",
+      "Card terminal in any office"
+    ],
+    "cash": "Not accepted.",
+    "installments": {
+      "casco": "2 or 4 equal payments, no overpayment",
+      "dms_individual": "2 payments",
+      "ogpo": "Full payment only",
+      "travel": "Full payment only"
+    }
+  },
+  "cancellation": {
+    "refund_formula": "premium * unused_full_months / 12 * 0.9 (10% administrative expenses)",
+    "refund_time": "10 working days to the card used for payment.",
+    "note": "No refund if a claim was paid under the policy."
+  },
+  "bonus_malus": {
+    "classes": [
+      "M",
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13"
+    ],
+    "start_class": "3",
+    "rules": [
+      "+1 class for each year without at-fault accidents",
+      "-2 classes for each at-fault accident (not below M)"
+    ]
+  },
+  "app_help": {
+    "login": "Log in with the phone number and a one-time SMS code.",
+    "sms_code_not_received": [
+      "Check the phone number",
+      "Wait 60 seconds and request a new code",
+      "Maximum 5 codes per hour"
+    ],
+    "payment_error": [
+      "Try another card",
+      "Check that online payments are enabled in your bank"
+    ],
+    "escalation": "If standard steps do not help, transfer to an operator."
+  },
+  "fraud_policy": [
+    "Saqta never asks for SMS codes, card CVV or PIN.",
+    "Saqta never asks to transfer money to a personal card.",
+    "Policies are never cancelled because a client refused to share a code.",
+    "Policy status can be checked in the app or with the contact center."
+  ],
+  "documents_available": {
+    "policy_duplicate": "email, instantly",
+    "contract_copy": "email, within 1 working day",
+    "embassy_certificate": "email, in English, within 1 working day",
+    "payment_certificate": "email, within 1 working day"
+  },
+  "complaints": {
+    "review_time": "Shift supervisor calls back the same day; written answer within 15 working days."
+  }
+}

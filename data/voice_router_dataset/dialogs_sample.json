@@ -1,0 +1,988 @@
+{
+  "meta": {
+    "dataset": "Voice Router - Saqta Insurance",
+    "version": "1.0",
+    "as_of_date": "2026-10-01"
+  },
+  "dialogs": [
+    {
+      "dialog_id": "D01",
+      "title": "OGPO quote turns into purchase",
+      "tags": [
+        "scenario_switch",
+        "confirmation"
+      ],
+      "client_id": null,
+      "turns": [
+        {
+          "role": "client",
+          "text": "Добрый день! Сколько будет стоить обязательная страховка на машину?",
+          "lang": "ru",
+          "scenarios": [
+            "SC01"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Добрый день! Сейчас посчитаю. В каком городе зарегистрирована машина и кто будет за рулём?",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "В Алматы, легковая. Водить буду я и жена.",
+          "lang": "ru",
+          "scenarios": [
+            "SC01"
+          ],
+          "slots": {
+            "region": "almaty",
+            "vehicle_type": "car"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Назовите, пожалуйста, ИИН — ваш и супруги.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Мой 910512300456, жены 930824400789.",
+          "lang": "ru",
+          "scenarios": [
+            "SC01"
+          ],
+          "slots": {
+            "drivers_iin": [
+              "910512300456",
+              "930824400789"
+            ]
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Полис на год выйдет 38 000 тенге. Оформим?",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "get_bm_class",
+              "result": {
+                "910512300456": "3",
+                "930824400789": "3"
+              }
+            },
+            {
+              "name": "calc_ogpo_price",
+              "result": {
+                "price": 38000
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Да, давайте оформим.",
+          "lang": "ru",
+          "scenarios": [
+            "SC02"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Хорошо. Назовите госномер машины и телефон для ссылки на оплату.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Номер 482KMA02, телефон плюс семь семьсот семь, сто двадцать три, сорок пять, шестьдесят семь.",
+          "lang": "ru",
+          "scenarios": [
+            "SC02"
+          ],
+          "slots": {
+            "vehicle_plate": "482KMA02",
+            "phone": "+77071234567"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Проверю: ОГПО на машину 482KMA02, два водителя, 38 000 тенге, ссылка на номер +7 707 123 45 67. Всё верно?",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "create_policy",
+              "mode": "preview"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Да, верно.",
+          "lang": "ru",
+          "scenarios": [
+            "SC02"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Готово: полис SQ-OGPO-104901. Ссылку на оплату отправила в SMS, после оплаты полис сразу вступит в силу.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "create_policy",
+              "mode": "execute",
+              "result": {
+                "policy_number": "SQ-OGPO-104901"
+              }
+            },
+            {
+              "name": "send_sms"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dialog_id": "D02",
+      "title": "Victim claim under culprit's OGPO (Kazakh)",
+      "tags": [
+        "kazakh",
+        "confirmation"
+      ],
+      "client_id": null,
+      "turns": [
+        {
+          "role": "client",
+          "text": "Сәлеметсіз бе. Үш күн бұрын жол апаты болды, маған артымнан соғып кетті. Кінәлінің сақтандыруы сіздерде екен.",
+          "lang": "kk",
+          "scenarios": [
+            "SC12"
+          ],
+          "slots": {
+            "incident_date": "2026-09-28",
+            "incident_description": "Rear-end collision, the other driver is at fault"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Сәлеметсіз бе! Түсінемін, қазір рәсімдейік. Кінәлі көліктің мемлекеттік нөмірін айтыңызшы.",
+          "lang": "kk",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "777ABC02.",
+          "lang": "kk",
+          "scenarios": [
+            "SC12"
+          ],
+          "slots": {
+            "culprit_vehicle_plate": "777ABC02"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Рақмет, кінәлінің полисі табылды. Байланыс үшін телефон нөміріңізді айтыңызшы.",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "get_policy",
+              "result": {
+                "policy_number": "SQ-OGPO-104501",
+                "status": "active"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "8 701 555 12 34.",
+          "lang": "kk",
+          "scenarios": [
+            "SC12"
+          ],
+          "slots": {
+            "phone": "+77015551234"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Тексерейін: 28 қыркүйектегі жол апаты, кінәлі көлік 777ABC02, байланыс нөмірі +7 701 555 12 34. Өтінішті тіркейін бе?",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "create_claim",
+              "mode": "preview"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Иә, тіркеңіз.",
+          "lang": "kk",
+          "scenarios": [
+            "SC12"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "CL-500342 өтініші тіркелді. Құжаттар тізімін SMS-пен жібердім. Тағы сұрағыңыз бар ма?",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "create_claim",
+              "mode": "execute",
+              "result": {
+                "claim_number": "CL-500342"
+              }
+            },
+            {
+              "name": "send_sms"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Жоқ, рақмет.",
+          "lang": "kk",
+          "scenarios": [
+            "SYS_GOODBYE"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Хабарласқаныңызға рақмет! Күніңіз сәтті өтсін.",
+          "lang": "kk",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "dialog_id": "D03",
+      "title": "Claim status, detour to renewal, return to claim",
+      "tags": [
+        "topic_switch",
+        "context_return",
+        "multi_intent"
+      ],
+      "client_id": "C007",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Здравствуйте, хочу узнать, что с моим заявлением по каско.",
+          "lang": "ru",
+          "scenarios": [
+            "SC17"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Здравствуйте! Сейчас проверю. Назовите номер заявления или телефон.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Номер не помню, телефон плюс 7 701 000 00 07.",
+          "lang": "ru",
+          "scenarios": [
+            "SC17"
+          ],
+          "slots": {
+            "phone": "+77010000007"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Сергей, вижу заявление CL-500330 по КАСКО. Оно на рассмотрении, решение будет до 9 октября.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "find_client",
+              "result": {
+                "client_id": "C007"
+              }
+            },
+            {
+              "name": "get_claim",
+              "result": {
+                "claim_number": "CL-500330",
+                "status": "under_review"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Понял. Слушайте, а каско у меня скоро заканчивается — его можно продлить в рассрочку?",
+          "lang": "ru",
+          "scenarios": [
+            "SC27",
+            "SC31"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Да, КАСКО можно продлить и оплатить в 2 или 4 платежа без переплаты. Продлить сейчас полис SQ-CASCO-204300?",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "kb_lookup",
+              "topic": "payments.installments"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Давайте потом, сначала пусть решат по заявлению. А по заявлению мне что-то ещё нужно донести?",
+          "lang": "ru",
+          "scenarios": [
+            "SC18"
+          ],
+          "slots": {
+            "claim_number": "CL-500330"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Нет, все документы есть, дополнительно ничего не нужно. Как только будет решение, придёт SMS.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "get_claim",
+              "result": {
+                "next_step": "All documents received"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Отлично, спасибо.",
+          "lang": "ru",
+          "scenarios": [
+            "SYS_GOODBYE"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Спасибо за обращение! Хорошего дня.",
+          "lang": "ru",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "dialog_id": "D04",
+      "title": "DMS appointment with mixed Kazakh-Russian speech",
+      "tags": [
+        "mixed_language",
+        "multi_intent"
+      ],
+      "client_id": "C002",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Сәлеметсіз бе, маған терапевтке жазылу керек, завтра утром можно?",
+          "lang": "mixed",
+          "scenarios": [
+            "SC21"
+          ],
+          "slots": {
+            "doctor_specialty": "therapist",
+            "preferred_date": "2026-10-02"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Сәлеметсіз бе! Әрине, жазып қоямын. Полисіңізді табу үшін телефон нөміріңізді айтыңызшы.",
+          "lang": "kk",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Плюс жеті, жеті жүз бір, нөл нөл нөл, нөл нөл, нөл екі.",
+          "lang": "kk",
+          "scenarios": [
+            "SC21"
+          ],
+          "slots": {
+            "phone": "+77010000002"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Айгерім, Астанадағы Saulet Medical емханасында ертең 09:30-ға бос орын бар. Жазып қояйын ба?",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "find_client",
+              "result": {
+                "client_id": "C002"
+              }
+            },
+            {
+              "name": "book_appointment",
+              "mode": "preview",
+              "result": {
+                "clinic_name": "Saulet Medical",
+                "slot_datetime": "2026-10-02 09:30"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Иә, жазыңыз. А анализы тоже бесплатно по страховке?",
+          "lang": "mixed",
+          "scenarios": [
+            "SC21",
+            "SC22"
+          ],
+          "slots": {
+            "service_name": "lab tests"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Жазып қойдым: ертең 09:30, Saulet Medical. Дәрігер жолдаған талдаулар Комфорт бағдарламасы бойынша тегін.",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "book_appointment",
+              "mode": "execute"
+            },
+            {
+              "name": "check_coverage",
+              "result": {
+                "covered": true,
+                "note": "Lab tests by doctor's referral"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Рақмет!",
+          "lang": "kk",
+          "scenarios": [
+            "SYS_GOODBYE"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Хабарласқаныңызға рақмет! Сау болыңыз.",
+          "lang": "kk",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "dialog_id": "D05",
+      "title": "Low confidence, clarification, then resend",
+      "tags": [
+        "clarification"
+      ],
+      "client_id": "C009",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Здравствуйте, у меня проблема с полисом.",
+          "lang": "ru",
+          "scenarios": [
+            "SYS_UNCLEAR"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Здравствуйте! Уточните, пожалуйста: полис не пришёл или деньги списались, а полис не оформился?",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Нет, оплатил, в приложении полис есть, а на почту ничего не пришло.",
+          "lang": "ru",
+          "scenarios": [
+            "SC26"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Понятно, отправлю ещё раз. Назовите номер телефона, на который оформляли.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Плюс 7 701 000 00 09.",
+          "lang": "ru",
+          "scenarios": [
+            "SC26"
+          ],
+          "slots": {
+            "phone": "+77010000009"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Отправила полис SQ-OGPO-104777 на почту r***@mail.example. Если письма нет, проверьте папку «Спам».",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "find_client",
+              "result": {
+                "client_id": "C009"
+              }
+            },
+            {
+              "name": "resend_documents",
+              "result": {
+                "sent_to": "rustem.i@mail.example"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dialog_id": "D06",
+      "title": "Complaint escalated to a human",
+      "tags": [
+        "handoff",
+        "emotional"
+      ],
+      "client_id": "C004",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Мне обещали перезвонить по заявлению о затоплении и уже неделю никто не звонит!",
+          "lang": "ru",
+          "scenarios": [
+            "SC35"
+          ],
+          "slots": {
+            "complaint_text": "Promised callback about the flood claim did not happen for a week"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Мне очень жаль, что так вышло. Подскажите номер телефона, я зафиксирую жалобу.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Плюс 7 701 000 00 04. И соедините меня уже с человеком!",
+          "lang": "ru",
+          "scenarios": [
+            "SC37"
+          ],
+          "slots": {
+            "phone": "+77010000004"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Жалоба T-700118 зарегистрирована. Соединяю со специалистом, он уже видит суть вопроса и ваше заявление CL-500311.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "create_complaint",
+              "result": {
+                "ticket_id": "T-700118"
+              }
+            },
+            {
+              "name": "transfer_to_operator",
+              "queue": "complaints_team"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dialog_id": "D07",
+      "title": "CASCO termination with explicit confirmation (Kazakh)",
+      "tags": [
+        "kazakh",
+        "irreversible_action"
+      ],
+      "client_id": "C010",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Сәлеметсіз бе, көлігімді саттым, КАСКО шартын бұзып, қалған ақшаны қайтарғым келеді.",
+          "lang": "kk",
+          "scenarios": [
+            "SC28"
+          ],
+          "slots": {
+            "cancel_reason": "Car sold"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Сәлеметсіз бе! Көмектесейін. Полис нөмірін немесе телефон нөміріңізді айтыңызшы.",
+          "lang": "kk",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Телефон: плюс жеті, жеті жүз бір, нөл нөл нөл, нөл нөл, он.",
+          "lang": "kk",
+          "scenarios": [
+            "SC28"
+          ],
+          "slots": {
+            "phone": "+77010000010"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Камила, SQ-CASCO-204350 полисі табылды. Шартты бүгін бұзсақ, 163 800 теңге қайтарылады. Растайсыз ба? Бұл әрекетті кейін қайтару мүмкін емес.",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "find_client",
+              "result": {
+                "client_id": "C010"
+              }
+            },
+            {
+              "name": "cancel_policy",
+              "mode": "preview",
+              "result": {
+                "refund_amount": 163800
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Иә, растаймын.",
+          "lang": "kk",
+          "scenarios": [
+            "SC28"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Шарт бұзылды. 163 800 теңге 10 жұмыс күні ішінде картаңызға түседі.",
+          "lang": "kk",
+          "actions": [
+            {
+              "name": "cancel_policy",
+              "mode": "execute",
+              "result": {
+                "refund_amount": 163800
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dialog_id": "D08",
+      "title": "Property claim status and missing document",
+      "tags": [
+        "context_carry"
+      ],
+      "client_id": "C004",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Добрый день, что с моим заявлением по затоплению квартиры?",
+          "lang": "ru",
+          "scenarios": [
+            "SC17"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Добрый день! Проверю. Назовите номер заявления или телефон.",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "CL-500311.",
+          "lang": "ru",
+          "scenarios": [
+            "SC17"
+          ],
+          "slots": {
+            "claim_number": "CL-500311"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Наталья, по заявлению CL-500311 не хватает одного документа — акта о заливе от управляющей компании. Как только загрузите его, заявление уйдёт на рассмотрение.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "get_claim",
+              "result": {
+                "status": "documents_requested"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "А куда его отправить, можно фото?",
+          "lang": "ru",
+          "scenarios": [
+            "SC18"
+          ],
+          "slots": {
+            "claim_number": "CL-500311"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Да, фото подойдёт. Загрузите его в приложении в разделе «Мои заявления» или пришлите на claims@saqta-insurance.example с номером заявления.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "kb_lookup",
+              "topic": "claims.submission"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Хорошо, спасибо.",
+          "lang": "ru",
+          "scenarios": [
+            "SYS_GOODBYE"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Спасибо за обращение! Хорошего дня.",
+          "lang": "ru",
+          "actions": []
+        }
+      ]
+    },
+    {
+      "dialog_id": "D09",
+      "title": "Fraud report followed by policy check",
+      "tags": [
+        "security",
+        "scenario_switch"
+      ],
+      "client_id": "C008",
+      "turns": [
+        {
+          "role": "client",
+          "text": "Мне сейчас звонили, сказали, что они из Saqta и страховку надо переоформить, просили назвать код из SMS.",
+          "lang": "ru",
+          "scenarios": [
+            "SC38"
+          ],
+          "slots": {
+            "fraud_details": "Caller claimed to be Saqta, asked for SMS code to re-issue the policy"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Хорошо, что вы уточнили. Мы никогда не просим коды из SMS. Вы уже сообщили им код?",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Нет, не сообщил, сразу положил трубку.",
+          "lang": "ru",
+          "scenarios": [
+            "SC38"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Правильно сделали. Обращение F-900044 передала в службу безопасности. Если хотите, проверю, что с вашим полисом всё в порядке.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "report_fraud",
+              "result": {
+                "ticket_id": "F-900044"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Да, проверьте. Номер плюс 7 701 000 00 08.",
+          "lang": "ru",
+          "scenarios": [
+            "SC25"
+          ],
+          "slots": {
+            "phone": "+77010000008"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Полис SQ-OGPO-103990 действует до 14 февраля 2027 года, никаких изменений в нём не было.",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "find_client",
+              "result": {
+                "client_id": "C008"
+              }
+            },
+            {
+              "name": "get_policy",
+              "result": {
+                "status": "active",
+                "end_date": "2027-02-14"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "dialog_id": "D10",
+      "title": "Travel purchase, client switches from Kazakh to Russian",
+      "tags": [
+        "language_switch",
+        "confirmation"
+      ],
+      "client_id": null,
+      "turns": [
+        {
+          "role": "client",
+          "text": "Сәлеметсіз бе, Түркияға баруға сақтандыру керек.",
+          "lang": "kk",
+          "scenarios": [
+            "SC06"
+          ],
+          "slots": {
+            "trip_country": "Turkey"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Сәлеметсіз бе! Көмектесейін. Қай күндері барасыз және неше адам?",
+          "lang": "kk",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Слушайте, давайте на русском, мне так удобнее. Летим с 10 по 16 октября, вдвоём с мужем.",
+          "lang": "ru",
+          "scenarios": [
+            "SC06"
+          ],
+          "slots": {
+            "trip_start": "2026-10-10",
+            "trip_end": "2026-10-16",
+            "travelers_count": 2
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Конечно, перейдём на русский. Сколько лет старшему из вас?",
+          "lang": "ru",
+          "actions": []
+        },
+        {
+          "role": "client",
+          "text": "Мужу сорок два.",
+          "lang": "ru",
+          "scenarios": [
+            "SC06"
+          ],
+          "slots": {
+            "traveler_max_age": 42
+          }
+        },
+        {
+          "role": "bot",
+          "text": "На двоих выйдет 15 400 тенге, покрытие 50 000 долларов, экстренная помощь круглосуточно. Оформляем?",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "calc_travel_price",
+              "result": {
+                "price": 15400,
+                "zone": "C",
+                "coverage": "50 000 USD"
+              }
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Да, оформляйте. Телефон плюс 7 702 345 67 89.",
+          "lang": "ru",
+          "scenarios": [
+            "SC06"
+          ],
+          "slots": {
+            "phone": "+77023456789"
+          }
+        },
+        {
+          "role": "bot",
+          "text": "Проверю: страховка в Турцию с 10 по 16 октября на двоих, 15 400 тенге, ссылка на номер +7 702 345 67 89. Верно?",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "create_policy",
+              "mode": "preview"
+            }
+          ]
+        },
+        {
+          "role": "client",
+          "text": "Верно.",
+          "lang": "ru",
+          "scenarios": [
+            "SC06"
+          ],
+          "slots": {}
+        },
+        {
+          "role": "bot",
+          "text": "Готово, полис SQ-TRVL-304610. Ссылку на оплату отправила в SMS. Хорошей поездки!",
+          "lang": "ru",
+          "actions": [
+            {
+              "name": "create_policy",
+              "mode": "execute",
+              "result": {
+                "policy_number": "SQ-TRVL-304610"
+              }
+            },
+            {
+              "name": "send_sms"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
