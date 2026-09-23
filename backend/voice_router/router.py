@@ -21,6 +21,11 @@ class RouteDecision(BaseModel):
     reason: str = Field(description="Brief rationale grounded in the utterance and catalogue boundaries")
 
 
+class ConfirmationDecision(BaseModel):
+    decision: Literal["approve", "reject", "change_request", "unclear"]
+    reason: str = Field(description="Short explanation grounded in the customer's actual reply")
+
+
 @dataclass(frozen=True)
 class RouteResult:
     decision: RouteDecision
@@ -129,3 +134,37 @@ class OpenAIRouter:
             input_tokens=usage.input_tokens if usage else 0,
             output_tokens=usage.output_tokens if usage else 0,
         )
+
+    def interpret_confirmation(
+        self, transcript: str, *, pending_action: dict, history: list[dict[str, str]]
+    ) -> tuple[ConfirmationDecision, float, int, int]:
+        """Understand natural RU/KK approval without a keyword-triggered write."""
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "You are interpreting a customer's answer to one pending insurance action. "
+                    "Approve only if the customer explicitly and unambiguously authorizes "
+                    "that exact action in this turn. Reject if they refuse or cancel it. "
+                    "If they change any parameter or switch topics, return change_request; "
+                    "if uncertain, return unclear. Understand natural Russian, Kazakh, and "
+                    "mixed language. Never treat mere acknowledgement as approval."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "pending_action": pending_action,
+                    "recent_history": history[-4:],
+                    "customer_reply": transcript,
+                }, ensure_ascii=False)},
+            ],
+            text_format=ConfirmationDecision,
+            max_output_tokens=100,
+        )
+        parsed = response.output_parsed
+        if parsed is None:
+            raise RuntimeError("OpenAI did not return a parsed confirmation decision")
+        usage = response.usage
+        return parsed, (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)

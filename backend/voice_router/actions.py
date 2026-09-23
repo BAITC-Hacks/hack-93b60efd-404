@@ -199,26 +199,18 @@ class ActionExecutor:
         return {"clinics": clinics}
 
     def _handle_calc_travel_price(
-        self, *, trip_country: str, trip_start: str, trip_end: str,
+        self, *, trip_country: str, trip_zone: str, trip_start: str, trip_end: str,
         travelers_count: int, traveler_max_age: int,
     ) -> dict[str, Any]:
-        country = trip_country.casefold().strip()
-        zone = (
-            "D" if country in {"usa", "united states", "сша", "канада", "canada"}
-            else "B" if country in {"schengen", "шенген", "uk", "united kingdom", "великобритания", "германия", "germany", "франция", "france", "италия", "italy", "испания", "spain"}
-            else "A" if country in {"казахстан", "kyrgyzstan", "кыргызстан", "узбекистан", "uzbekistan", "грузия", "georgia", "россия", "russia"}
-            else "C" if country in {"турция", "turkey", "оаэ", "uae", "таиланд", "thailand", "египет", "egypt"}
-            else None
-        )
-        if zone is None:
+        if trip_zone not in self.knowledge["products"]["travel"]["zones"]:
             raise ActionError("unknown_country", "Destination zone cannot be verified; transfer to operator")
         days = (date.fromisoformat(trip_end) - date.fromisoformat(trip_start)).days + 1
         if days <= 0 or travelers_count <= 0 or traveler_max_age > 75:
             raise ActionError("not_eligible", "Invalid trip or traveler over 75; transfer to operator")
-        plan = self.knowledge["products"]["travel"]["zones"][zone]
+        plan = self.knowledge["products"]["travel"]["zones"][trip_zone]
         age_coef = 2 if traveler_max_age >= 65 else 1
         return {"price": plan["rate_per_day_kzt"] * days * travelers_count * age_coef,
-                "zone": zone, "coverage": plan["coverage"]}
+                "zone": trip_zone, "coverage": plan["coverage"], "destination": trip_country}
 
     def _handle_check_payment(self, *, client_id: str, payment_date: str) -> dict[str, Any]:
         matches = [p for p in self.data["payments"] if p["client_id"] == client_id and p["date"] == payment_date]
