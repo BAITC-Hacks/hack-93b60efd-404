@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 import json
+import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
 
-DATASET_DIR = Path(__file__).resolve().parents[2] / "data" / "voice_router_dataset"
+DATASET_DIR = Path(os.environ.get(
+    "VOICE_ROUTER_DATASET_DIR",
+    Path(__file__).resolve().parents[2] / "data" / "voice_router_dataset",
+))
 
 
 def _read_json(path: Path) -> dict[str, Any]:
