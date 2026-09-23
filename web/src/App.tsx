@@ -225,6 +225,7 @@ export default function App() {
       <div className="shell__row">
         <div className="phone-slot" style={frame.framed ? { width: PHONE_W * frame.scale, height: phoneH } : undefined}>
           <div className="phone" style={frame.framed ? { transform: `scale(${frame.scale})` } : undefined}>
+          <div className="phone__screen">
             {frame.framed && <StatusBar />}
     <div className="app">
       <Sidebar
@@ -391,6 +392,7 @@ export default function App() {
         )}
       </main>
     </div>
+          </div>
           </div>
         </div>
 
