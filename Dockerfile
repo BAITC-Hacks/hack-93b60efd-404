@@ -13,8 +13,8 @@ COPY backend/ ./backend/
 RUN pip install --no-cache-dir .
 COPY data/voice_router_dataset/ ./data/voice_router_dataset/
 COPY --from=frontend /app/frontend/dist/ ./frontend/dist/
-RUN useradd --system --uid 10001 voice && chown -R voice:voice /app
-USER voice
+RUN useradd --system --uid 10001 --gid nogroup voice-router && chown -R voice-router:nogroup /app
+USER voice-router
 EXPOSE 8000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s CMD python -c 'import urllib.request; urllib.request.urlopen("http://127.0.0.1:8000/api/health", timeout=2).read()'
 CMD ["python", "-m", "voice_router.server"]
