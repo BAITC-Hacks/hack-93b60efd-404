@@ -395,4 +395,5 @@ class ActionExecutor:
     def _handle_transfer_to_operator(self, *, queue: str = "general",
                                      summary: str = "") -> dict[str, Any]:
         event = self._record("transfer_to_operator", queue=queue, summary=summary)
-        return {"handoff_id": event["id"], "status": "queued_locally_no_live_operator"}
+        return {"handoff_id": event["id"], "status": "queued_locally_no_live_operator",
+                "queue": queue, "summary": summary}

@@ -193,6 +193,7 @@ class DialogueService:
                 "selected_scenarios": route_ids,
                 "alternatives": decision.alternatives,
                 "reason": decision.reason,
+                "is_continuation": decision.is_continuation,
                 "model": result.model,
                 "router_ms": round(result.router_ms, 1),
                 "extractor_ms": round(extraction.extractor_ms, 1) if extraction else None,
@@ -387,6 +388,19 @@ class DialogueService:
             params = {"product_type": {"SC12": "ogpo", "SC13": "casco", "SC14": "property", "SC16": "accident"}[scenario_id],
                       "incident_date": values["incident_date"], "incident_description": values["incident_description"],
                       "client_id": identified_client_id, "policy_number": values.get("policy_number")}
+            if scenario_id == "SC12":
+                try:
+                    culprit_policy = self.actions.execute(
+                        "get_policy", vehicle_plate=values["culprit_vehicle_plate"]
+                    )
+                except ActionError as exc:
+                    return str(exc), [{"name": "get_policy", "status": "error", "error_code": exc.code}]
+                if culprit_policy["product"] != "ogpo":
+                    return ("По этому номеру не найден полис ОГПО в данных кейса."
+                        if language == "ru" else "Бұл нөмірге кейс деректерінде ОГПО полисі табылмады."), [
+                        {"name": "get_policy", "status": "error", "error_code": "wrong_product"}
+                    ]
+                params["policy_number"] = culprit_policy["policy_number"]
         elif scenario_id in {"SC04", "SC05"}:
             params = {"policy_number": values["policy_number"]}
             params["new_driver_iin" if scenario_id == "SC04" else "vehicle_plate"] = values[
@@ -454,6 +468,15 @@ class DialogueService:
             result = self.actions.execute(action_name, **params)
         except ActionError as exc:
             return str(exc), [{"name": action_name, "status": "error", "error_code": exc.code}]
+        if scenario_id == "SC18":
+            selected = result["answer"].get(values["product_type"])
+            if selected is None:
+                return ("Для этого продукта списка документов нет в базе кейса." if language == "ru"
+                    else "Бұл өнімнің құжат тізімі кейс базасында жоқ."), [
+                    {"name": action_name, "status": "not_found"}
+                ]
+            result = {"answer": selected, "product_type": values["product_type"],
+                      "source": result["source"]}
         if self._has_side_effect(action_name):
             state.executed_action_keys.add(action_key)
 
@@ -470,9 +493,18 @@ class DialogueService:
         elif action_name == "transfer_to_operator":
             answer = (f"Запрос {result['handoff_id']} записан для оператора в локальной системе. Живое соединение пока не подключено."
                 if language == "ru" else f"{result['handoff_id']} сұрауы жергілікті жүйеге жазылды. Оператормен тікелей қосылу әлі қосылмаған.")
+            if scenario_id == "SC11":
+                answer = ("Если есть пострадавшие, немедленно звоните 112. Включите аварийку и не перемещайте машины до оформления. "
+                    if language == "ru" else "Зардап шеккендер болса, дереу 112-ге қоңырау шалыңыз. Апат белгісін қосып, рәсімдеуге дейін көліктерді қозғамаңыз. ") + answer
+            elif scenario_id == "SC15":
+                answer = ("Сначала свяжитесь с круглосуточным медицинским ассистансом по вашему полису. "
+                    if language == "ru" else "Алдымен полистегі тәулік бойғы медициналық ассистансқа хабарласыңыз. ") + answer
         elif action_name in {"create_callback", "create_complaint", "report_fraud"}:
             answer = (f"Обращение {result['ticket_id']} записано в локальной системе кейса. Реальный звонок или отправка пока не подключены."
                 if language == "ru" else f"{result['ticket_id']} өтініші жергілікті жүйеге жазылды. Нақты қоңырау немесе жіберу әлі қосылмаған.")
+            if action_name == "report_fraud":
+                answer += (" Никому не сообщайте SMS-код, PIN или CVV."
+                    if language == "ru" else " SMS-кодты, PIN немесе CVV-ді ешкімге айтпаңыз.")
         elif action_name in {"resend_documents", "request_document"}:
             answer = ("Запрос записан локально, но отправка документов сейчас не подключена."
                 if language == "ru" else "Сұрау жергілікті жүйеге жазылды, бірақ құжат жіберу қосылмаған.")
