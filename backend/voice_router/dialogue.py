@@ -385,6 +385,13 @@ class DialogueService:
                       "trip_country": values["trip_country"], "trip_start": values["trip_start"],
                       "trip_end": values["trip_end"], "travelers_count": values["travelers_count"]}
         elif scenario_id in {"SC12", "SC13", "SC14", "SC16"}:
+            if scenario_id == "SC12" and "phone" in values:
+                try:
+                    identified_client_id = self.actions.execute(
+                        "find_client", phone=values["phone"]
+                    )["client_id"]
+                except ActionError:
+                    pass
             params = {"product_type": {"SC12": "ogpo", "SC13": "casco", "SC14": "property", "SC16": "accident"}[scenario_id],
                       "incident_date": values["incident_date"], "incident_description": values["incident_description"],
                       "client_id": identified_client_id, "policy_number": values.get("policy_number")}

@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
+from threading import RLock
 from typing import Any
 from uuid import uuid4
 
@@ -28,6 +29,7 @@ class ActionExecutor:
         self.data = deepcopy(catalog.mock_backend)
         self.knowledge = catalog.knowledge_base
         self.events: list[dict[str, Any]] = []
+        self._lock = RLock()
 
     def execute(self, name: str, *, confirmed: bool = False, **params: Any) -> dict[str, Any]:
         definition = self.catalog.actions.get(name)
@@ -38,7 +40,8 @@ class ActionExecutor:
         handler = getattr(self, f"_handle_{name}", None)
         if handler is None:
             raise ActionError("not_implemented", f"Action {name} is not implemented")
-        return handler(**params)
+        with self._lock:
+            return handler(**params)
 
     def _record(self, name: str, **payload: Any) -> dict[str, Any]:
         item = {"id": uuid4().hex[:12], "action": name, "mode": "local_case_simulation", **payload}
@@ -86,7 +89,9 @@ class ActionExecutor:
                 return {
                     "policy_number": policy["policy_number"],
                     "product": policy["product"],
-                    "status": "active" if date.fromisoformat(policy["end_date"]) >= DATA_DATE else "expired",
+                    "status": policy.get("status") or (
+                        "active" if date.fromisoformat(policy["end_date"]) >= DATA_DATE else "expired"
+                    ),
                     "end_date": policy["end_date"],
                     "client_id": policy["client_id"],
                 }
@@ -275,12 +280,28 @@ class ActionExecutor:
                      drivers_iin=drivers_iin, trip_country=trip_country,
                      trip_start=trip_start, trip_end=trip_end,
                      travelers_count=travelers_count)
+        client = next((item for item in self.data["clients"] if item["phone"] == phone), None)
+        if client:
+            self.data["policies"].append({
+                "policy_number": number, "client_id": client["client_id"],
+                "product": product_type, "start_date": DATA_DATE.isoformat(),
+                "end_date": DATA_DATE.replace(year=DATA_DATE.year + 1).isoformat(),
+                "premium": price, "status": "pending_payment",
+                "details": {"vehicle_plate": vehicle_plate, "drivers_iin": drivers_iin,
+                            "trip_country": trip_country, "trip_start": trip_start,
+                            "trip_end": trip_end, "travelers_count": travelers_count},
+            })
         return {"policy_number": number, "status": "pending_payment", "delivery": "not_sent"}
 
     def _handle_renew_policy(self, *, policy_number: str) -> dict[str, Any]:
         policy = self._policy(policy_number)
         number = f"SQ-{policy['product'].upper()}-{uuid4().hex[:6].upper()}"
         self._record("renew_policy", old_policy_number=policy_number, policy_number=number)
+        self.data["policies"].append({
+            **deepcopy(policy), "policy_number": number, "status": "pending_payment",
+            "start_date": DATA_DATE.isoformat(),
+            "end_date": DATA_DATE.replace(year=DATA_DATE.year + 1).isoformat(),
+        })
         return {"policy_number": number, "price": policy["premium"], "status": "pending_payment"}
 
     def _handle_update_policy(self, *, policy_number: str, new_driver_iin: str | None = None,
