@@ -11,6 +11,8 @@ import uuid
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from threading import Lock
 from typing import Any
+from urllib.error import HTTPError, URLError
+from urllib.request import Request, urlopen
 
 from openai import OpenAI, OpenAIError
 
@@ -32,7 +34,6 @@ AUDIO_TYPES = {
 }
 MAX_BODY_BYTES = 10 * 1024 * 1024
 
-
 class Application:
     def __init__(self) -> None:
         self.catalog = load_catalog()
@@ -45,6 +46,21 @@ class Application:
         )
         self.audio: dict[str, bytes] = {}
         self.audio_lock = Lock()
+
+    def create_gemini_token(self) -> dict[str, Any]:
+        # One use, one minute to connect, thirty minutes of session lifetime.
+        body = b'{"uses":1}'
+        request = Request(
+            "https://generativelanguage.googleapis.com/v1beta/auth_tokens",
+            data=body,
+            headers={
+                "x-goog-api-key": os.environ["GEMINI_API_KEY"],
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        with urlopen(request, timeout=30) as response:
+            return json.load(response)
 
     def process_audio(self, session_id: str, audio: bytes, content_type: str) -> dict[str, Any]:
         extension = AUDIO_TYPES.get(content_type)
@@ -163,6 +179,17 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
 
         def do_POST(self) -> None:
             try:
+                if self.path == "/gemini/token":
+                    origin = self.headers.get("Origin")
+                    allowed = os.environ.get("VOICE_ROUTER_CORS_ORIGIN")
+                    local_origins = {"http://localhost:5173", "http://127.0.0.1:5173"}
+                    if origin not in ({allowed} if allowed else local_origins):
+                        self._send_json(403, {"error": "Unexpected browser origin"})
+                        return
+                    if self.headers.get("Content-Length", "0") not in {"0", ""}:
+                        raise ValueError("Token request must have no body")
+                    self._send_json(201, app.create_gemini_token())
+                    return
                 if self.path == "/sessions":
                     session = app.dialogue.create_session()
                     self._send_json(201, {"session_id": session.session_id})
@@ -195,6 +222,9 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
             except OpenAIError as exc:
                 logging.exception("OpenAI request failed")
                 self._send_json(502, {"error": type(exc).__name__, "message": "External AI request failed"})
+            except (HTTPError, URLError) as exc:
+                logging.exception("Gemini token creation failed")
+                self._send_json(502, {"error": type(exc).__name__, "message": "Gemini voice connection failed"})
             except Exception as exc:
                 logging.exception("Voice Router request failed")
                 self._send_json(500, {"error": type(exc).__name__, "message": "Internal request failed"})
