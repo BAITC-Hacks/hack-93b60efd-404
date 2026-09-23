@@ -76,6 +76,7 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
   const recRef = useRef<Recognition | null>(null);
   const micRef = useRef<MicSession | null>(null);
   const speechEndRef = useRef<number | null>(null);
+  const cancelledRef = useRef(false);
 
   const supported =
     typeof window !== 'undefined' &&
@@ -166,7 +167,7 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
       releaseMic();
       setInterim('');
       setState('idle');
-      if (text) onFinalRef.current({ text, stt_ms: now - endedAt, speechEndedAt: endedAt });
+      if (text && !cancelledRef.current) onFinalRef.current({ text, stt_ms: now - endedAt, speechEndedAt: endedAt });
     };
 
     recRef.current = rec;
@@ -187,7 +188,7 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
     recorder.onstop = async () => {
       const endedAt = speechEndRef.current ?? performance.now();
       releaseMic();
-      if (!chunks.length || speechEndRef.current === null) {
+      if (cancelledRef.current || !chunks.length || speechEndRef.current === null) {
         setState('idle');
         return;
       }
@@ -218,6 +219,7 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
     setError(null);
     setInterim('');
     speechEndRef.current = null;
+    cancelledRef.current = false;
     setState('listening');
     try {
       if (engine === 'browser') startBrowser();
@@ -243,6 +245,17 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
     }
   }, []);
 
+  const cancel = useCallback(() => {
+    cancelledRef.current = true;
+    if (recRef.current) {
+      recRef.current.abort();
+      return;
+    }
+    const rec = micRef.current?.recorder;
+    if (rec?.state === 'recording') rec.stop();
+    else releaseMic();
+  }, [releaseMic]);
+
   useEffect(
     () => () => {
       recRef.current?.abort();
@@ -251,5 +264,5 @@ export function useVoiceInput({ engine, lang, onFinal }: Options) {
     [releaseMic],
   );
 
-  return { state, interim, error, clearError: () => setError(null), levelRef, supported, start, stop };
+  return { state, interim, error, clearError: () => setError(null), levelRef, supported, start, stop, cancel };
 }

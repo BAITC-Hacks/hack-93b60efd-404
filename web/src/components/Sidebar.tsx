@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Conversation } from '../state/types';
 import { relTime } from '../lib/format';
 import { IconChart, IconChat, IconPlus, IconTrash, Logo } from './icons';
@@ -12,6 +13,7 @@ interface Props {
   onDelete: (id: string) => void;
   onView: (v: 'chat' | 'supervisor') => void;
   onClose: () => void;
+  settings: ReactNode;
 }
 
 function lastScenario(c: Conversation) {
@@ -22,7 +24,7 @@ function lastScenario(c: Conversation) {
   return null;
 }
 
-export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, onDelete, onView, onClose }: Props) {
+export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, onDelete, onView, onClose, settings }: Props) {
   return (
     <>
       <div className={`scrim ${open ? 'is-open' : ''}`} onClick={onClose} aria-hidden />
@@ -73,6 +75,7 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
           })}
         </ul>
 
+        <div className="settings">{settings}</div>
         <div className="sidebar__foot">Данные синтетические. Робот не выполняет необратимых действий без подтверждения клиента.</div>
       </aside>
     </>

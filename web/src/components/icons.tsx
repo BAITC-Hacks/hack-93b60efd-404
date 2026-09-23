@@ -70,6 +70,19 @@ export const IconRefresh = (p: P) => (
   <svg {...base(p)}><path d="M20 11a8 8 0 1 0-2.3 5.7M20 5v6h-6" /></svg>
 );
 
+export const IconMenu = (p: P) => (
+  <svg {...base(p)}><path d="M4 8h16M4 16h10" /></svg>
+);
+export const IconSliders = (p: P) => (
+  <svg {...base(p)}><path d="M4 8h9M17 8h3M4 16h3M11 16h9" /><circle cx="15" cy="8" r="2" /><circle cx="9" cy="16" r="2" /></svg>
+);
+export const IconWaves = (p: P) => (
+  <svg {...base(p)}><path d="M5 10v4M9 7v10M13 4v16M17 8v8M21 11v2" /></svg>
+);
+export const IconMicOff = (p: P) => (
+  <svg {...base(p)}><path d="M9 9V6a3 3 0 0 1 5.6-1.5M15 11v0a3 3 0 0 1-4.3 2.7M5 11a7 7 0 0 0 11.5 5.4M19 11a7 7 0 0 1-.6 2.8M12 18v3M3 3l18 18" /></svg>
+);
+
 export const Logo = () => (
   <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden>
     <rect width="32" height="32" rx="9" fill="var(--accent)" />

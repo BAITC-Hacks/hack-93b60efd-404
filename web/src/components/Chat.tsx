@@ -11,25 +11,11 @@ export const EXAMPLES = [
   { lang: 'RU', text: 'Хочу расторгнуть полис и вернуть деньги' },
 ];
 
-interface EmptyProps {
-  onExample: (text: string) => void;
-  onMic: () => void;
-  micSupported: boolean;
-}
-
-export function EmptyState({ onExample, onMic, micSupported }: EmptyProps) {
+export function EmptyState({ onExample }: { onExample: (text: string) => void }) {
   return (
     <div className="empty">
-      <h1 className="empty__title">Расскажите, что случилось</h1>
-      <p className="empty__lead">
-        Говорите своими словами, по-русски или по-казахски. Робот сам поймёт, о чём вопрос, и покажет, почему выбрал этот сценарий.
-      </p>
-      <button className="empty__mic" onClick={onMic} disabled={!micSupported}>
-        <span className="empty__mic-ring">
-          <IconMic width={28} height={28} />
-        </span>
-        <span>{micSupported ? 'Нажмите и говорите' : 'Микрофон недоступен в этом браузере — напишите текстом'}</span>
-      </button>
+      <h1 className="empty__title">Чем помочь?</h1>
+      <p className="empty__lead">Говорите или пишите своими словами, по-русски или по-казахски.</p>
       <div className="empty__examples">
         {EXAMPLES.map((e) => (
           <button key={e.text} className="example" onClick={() => onExample(e.text)}>

@@ -6,20 +6,31 @@ import { Composer } from './components/Composer';
 import { Sidebar } from './components/Sidebar';
 import { Supervisor } from './components/Supervisor';
 import { TracePanel } from './components/TracePanel';
-import { IconAlert, IconClose, IconRefresh, IconSidebar, IconSpeaker, IconSpeakerOff, IconTrace } from './components/icons';
+import { VoiceOrb, type OrbState } from './components/VoiceOrb';
+import { IconAlert, IconBolt, IconBranch, IconClose, IconMenu, IconRefresh, IconSliders } from './components/icons';
+import { LOW_CONFIDENCE, ms, pct } from './lib/format';
 import { uid, useConversations } from './state/useConversations';
 import type { ClientTimings, Review } from './state/types';
-import { speak, stopSpeaking } from './voice/tts';
+import { onSpeakingChange, speak, stopSpeaking } from './voice/tts';
 import { useVoiceInput, type FinalUtterance, type SttEngine } from './voice/useVoiceInput';
 
 const HISTORY_LIMIT = 20;
 
+const LANGS: { id: LangHint; label: string }[] = [
+  { id: 'auto', label: 'Авто' },
+  { id: 'ru', label: 'RU' },
+  { id: 'kk', label: 'KZ' },
+];
+
 export default function App() {
   const store = useConversations();
   const [view, setView] = useState<'chat' | 'supervisor'>('chat');
+  const [mode, setMode] = useState<'voice' | 'chat'>('voice');
+  const [session, setSession] = useState(false);
+  const [muted, setMuted] = useState(false);
+  const [speaking, setSpeaking] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [sidebarHidden, setSidebarHidden] = useState(false);
-  const [traceOpen, setTraceOpen] = useState(() => window.innerWidth >= 1200);
+  const [traceOpen, setTraceOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [health, setHealth] = useState<Health | null>(null);
   const [checking, setChecking] = useState(true);
@@ -42,6 +53,8 @@ export default function App() {
     void checkHealth();
   }, [checkHealth]);
 
+  useEffect(() => onSpeakingChange(setSpeaking), []);
+
   const handleTurn = useCallback(
     async (text: string, input: InputChannel, utterance?: FinalUtterance) => {
       const startedAt = utterance?.speechEndedAt ?? performance.now();
@@ -51,6 +64,7 @@ export default function App() {
         .filter((m) => !m.pending && !m.error && m.text)
         .slice(-HISTORY_LIMIT)
         .map((m) => ({ role: m.role, text: m.text, scenario_id: m.turn?.scenario.id }));
+      const withVoice = voiceOut || mode === 'voice';
 
       stopSpeaking();
       store.append(convId, { id: uid(), role: 'user', text, input, createdAt: Date.now() });
@@ -62,7 +76,7 @@ export default function App() {
 
       try {
         const { res, network_ms } = await sendTurn(
-          { session_id: convId, text, input, lang_hint: langHint, history, stt_ms: utterance?.stt_ms, want_audio: voiceOut },
+          { session_id: convId, text, input, lang_hint: langHint, history, stt_ms: utterance?.stt_ms, want_audio: withVoice },
           source,
         );
         const receivedAt = performance.now();
@@ -70,20 +84,21 @@ export default function App() {
         store.patch(convId, botId, { pending: false, text: res.reply_text, turn: res, client, source });
         setBusy(false);
 
-        if (voiceOut) {
+        if (withVoice) {
           const audio = res.audio_b64 ? { b64: res.audio_b64, mime: res.audio_mime } : undefined;
           const audioAt = await speak(res.reply_text, res.lang === 'kk' ? 'kk' : 'ru', audio);
           if (audioAt != null) {
             store.patch(convId, botId, { client: { ...client, tts_ms: audioAt - receivedAt, e2e_ms: audioAt - startedAt } });
           }
         }
+        if (res.action === 'handoff') setSession(false);
       } catch (err) {
         const msg = err instanceof Error ? err.message : 'Запрос не выполнен';
         store.patch(convId, botId, { pending: false, error: `${msg}. Попробуйте ещё раз.` });
         setBusy(false);
       }
     },
-    [langHint, source, store, voiceOut],
+    [langHint, mode, source, store, voiceOut],
   );
 
   const voice = useVoiceInput({
@@ -92,16 +107,47 @@ export default function App() {
     onFinal: (u) => void handleTurn(u.text, 'voice', u),
   });
 
-  const startMic = () => {
+  useEffect(() => {
+    if (!session || muted || busy || speaking || voice.state !== 'idle' || voice.error) return;
+    const t = setTimeout(() => void voice.start(), 350);
+    return () => clearTimeout(t);
+    // voice.start is recreated every render; the listed state is what matters
+  }, [session, muted, busy, speaking, voice.state, voice.error]);
+
+  const startVoiceMode = () => {
     stopSpeaking();
-    void voice.start();
+    setView('chat');
+    setMode('voice');
+    setMuted(false);
+    setSession(true);
+    if (voice.state === 'idle') void voice.start();
+  };
+
+  const endVoiceMode = () => {
+    setSession(false);
+    voice.cancel();
+    stopSpeaking();
+    setMode('chat');
+  };
+
+  const toggleMute = () => {
+    if (!session) return startVoiceMode();
+    if (!muted) voice.cancel();
+    setMuted((v) => !v);
+  };
+
+  const onOrbClick = () => {
+    if (speaking) return stopSpeaking();
+    if (!session || muted) return startVoiceMode();
+    if (voice.state === 'listening') voice.stop();
   };
 
   const newConversation = () => {
-    stopSpeaking();
+    endVoiceMode();
     store.setActiveId(null);
     setSelectedId(null);
     setView('chat');
+    setMode('voice');
     setDrawerOpen(false);
   };
 
@@ -111,6 +157,8 @@ export default function App() {
   const selectedIdx = selected ? messages.indexOf(selected) : -1;
   const selectedUser = selectedIdx > 0 ? [...messages.slice(0, selectedIdx)].reverse().find((m) => m.role === 'user') ?? null : null;
   const turnNo = selected ? botMessages.indexOf(selected) + 1 : 0;
+  const lastBot = botMessages[botMessages.length - 1];
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
 
   const onReview = (r: Review | undefined) => {
     if (store.activeId && selected) store.patch(store.activeId, selected.id, { review: r });
@@ -118,19 +166,40 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        stopSpeaking();
-        if (voice.state === 'listening') voice.stop();
-      }
+      if (e.key !== 'Escape') return;
+      if (traceOpen) setTraceOpen(false);
+      else if (drawerOpen) setDrawerOpen(false);
+      else stopSpeaking();
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, [voice]);
+  }, [traceOpen, drawerOpen]);
 
-  const error = voice.error;
+  const orbState: OrbState =
+    voice.state === 'listening'
+      ? 'listening'
+      : voice.state === 'processing' || busy
+        ? 'thinking'
+        : speaking
+          ? 'speaking'
+          : session && muted
+            ? 'muted'
+            : 'idle';
+
+  const caption = (() => {
+    if (orbState === 'listening') return voice.interim || 'Слушаю…';
+    if (voice.state === 'processing') return 'Распознаю речь…';
+    if (busy) return 'Выбираю сценарий…';
+    if (speaking) return lastBot?.text.replace(/^\[демо\]\s*/, '') ?? '';
+    if (session && muted) return 'Микрофон выключен';
+    if (session) return '';
+    return voice.supported ? 'Нажмите на шар и расскажите, что случилось' : 'Этот браузер не распознаёт речь. Откройте Chrome или напишите текстом';
+  })();
+
+  const showTrace = traceOpen && view === 'chat';
 
   return (
-    <div className={`app ${sidebarHidden ? 'no-sidebar' : ''} ${traceOpen && view === 'chat' ? 'with-trace' : ''}`}>
+    <div className={`app ${showTrace ? 'with-trace' : ''}`}>
       <Sidebar
         conversations={store.conversations}
         activeId={store.activeId}
@@ -138,7 +207,7 @@ export default function App() {
         open={drawerOpen}
         onNew={newConversation}
         onSelect={(id) => {
-          stopSpeaking();
+          endVoiceMode();
           store.setActiveId(id);
           setSelectedId(null);
           setView('chat');
@@ -146,70 +215,70 @@ export default function App() {
         }}
         onDelete={store.remove}
         onView={(v) => {
+          if (v === 'supervisor') endVoiceMode();
           setView(v);
           setDrawerOpen(false);
         }}
         onClose={() => setDrawerOpen(false)}
+        settings={
+          <>
+            <div className="settings__row">
+              <span>Язык речи</span>
+              <div className="seg" role="radiogroup" aria-label="Язык распознавания">
+                {LANGS.map((l) => (
+                  <button key={l.id} role="radio" aria-checked={langHint === l.id} className={langHint === l.id ? 'is-on' : ''} onClick={() => setLangHint(l.id)}>
+                    {l.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <label className="settings__row">
+              <span>Озвучивать ответы в чате</span>
+              <input type="checkbox" className="switch" checked={voiceOut} onChange={(e) => setVoiceOut(e.target.checked)} />
+            </label>
+            {health?.stt && (
+              <label className="settings__row">
+                <span>Распознавание</span>
+                <select className="select" value={engine} onChange={(e) => setEngine(e.target.value as SttEngine)}>
+                  <option value="server">на сервере</option>
+                  <option value="browser">в браузере</option>
+                </select>
+              </label>
+            )}
+          </>
+        }
       />
 
       <main className="main">
         <header className="topbar">
-          <button
-            className="iconbtn"
-            onClick={() => (window.innerWidth < 900 ? setDrawerOpen(true) : setSidebarHidden((v) => !v))}
-            aria-label="Показать или скрыть список разговоров"
-          >
-            <IconSidebar />
+          <button className="chip-btn round-sm" onClick={() => setDrawerOpen(true)} aria-label="Разговоры и настройки">
+            <IconMenu width={18} height={18} />
           </button>
-          <div className="topbar__title">{view === 'supervisor' ? 'Панель супервизора' : store.active?.title ?? 'Новый разговор'}</div>
-
-          <div className="topbar__right">
-            <span className={`status ${checking ? '' : health ? 'status--ok' : 'status--demo'}`}>
-              <i />
-              {checking ? 'Проверяю сервер…' : health ? `Сервер${health.model ? ` · ${health.model}` : ''}` : 'Демо без сервера'}
-              {!checking && !health && (
-                <button onClick={checkHealth} aria-label="Проверить сервер снова" title="Проверить сервер снова">
-                  <IconRefresh width={14} height={14} />
-                </button>
-              )}
-            </span>
-            {health?.stt && (
-              <select className="select" value={engine} onChange={(e) => setEngine(e.target.value as SttEngine)} aria-label="Распознавание речи">
-                <option value="server">Распознавание: сервер</option>
-                <option value="browser">Распознавание: браузер</option>
-              </select>
-            )}
-            <button
-              className={`iconbtn ${voiceOut ? '' : 'is-off'}`}
-              onClick={() => {
-                if (voiceOut) stopSpeaking();
-                setVoiceOut((v) => !v);
-              }}
-              aria-pressed={voiceOut}
-              aria-label={voiceOut ? 'Выключить голосовые ответы' : 'Включить голосовые ответы'}
-              title={voiceOut ? 'Голосовые ответы включены' : 'Голосовые ответы выключены'}
-            >
-              {voiceOut ? <IconSpeaker /> : <IconSpeakerOff />}
-            </button>
-            {view === 'chat' && (
-              <button
-                className={`iconbtn ${traceOpen ? 'is-on' : ''}`}
-                onClick={() => setTraceOpen((v) => !v)}
-                aria-pressed={traceOpen}
-                aria-label="Трассировка"
-                title="Трассировка"
-              >
-                <IconTrace />
+          <button className="chip-btn title-pill" onClick={() => (view === 'supervisor' ? setView('chat') : setDrawerOpen(true))}>
+            {view === 'supervisor' ? 'Панель супервизора' : 'Voice Router'}
+          </button>
+          {!checking && !health && (
+            <span className="demo-pill" title="Сервер маршрутизации недоступен. Ответы даёт заглушка по ключевым словам, качество маршрутизации по ней не оценивайте.">
+              Демо<span className="demo-pill__long"> без сервера</span>
+              <button onClick={checkHealth} aria-label="Проверить сервер снова">
+                <IconRefresh width={13} height={13} />
               </button>
-            )}
-          </div>
+            </span>
+          )}
+          {health && <span className="live-pill">{health.model ?? 'сервер'}</span>}
+          <div className="topbar__spacer" />
+          {view === 'chat' && (
+            <button
+              className={`chip-btn round-sm ${traceOpen ? 'is-on' : ''}`}
+              onClick={() => setTraceOpen((v) => !v)}
+              aria-pressed={traceOpen}
+              aria-label="Трассировка"
+              title="Трассировка: сценарий, обоснование, задержки"
+            >
+              <IconSliders width={18} height={18} />
+            </button>
+          )}
         </header>
-
-        {!checking && !health && view === 'chat' && (
-          <div className="banner">
-            Сервер маршрутизации недоступен, ответы даёт упрощённая заглушка по ключевым словам. Качество маршрутизации по ней не оценивайте.
-          </div>
-        )}
 
         {view === 'supervisor' ? (
           <div className="scroll">
@@ -220,56 +289,89 @@ export default function App() {
                 store.setActiveId(convId);
                 setSelectedId(msgId);
                 setTraceOpen(true);
+                setMode('chat');
                 setView('chat');
               }}
             />
           </div>
-        ) : (
-          <>
-            <div className="scroll">
-              {messages.length === 0 ? (
-                <EmptyState onExample={(t) => void handleTurn(t, 'text')} onMic={startMic} micSupported={voice.supported} />
-              ) : (
-                <MessageList
-                  messages={messages}
-                  selectedId={selected?.id ?? null}
-                  busy={busy}
-                  onSelect={(id) => {
-                    setSelectedId(id);
+        ) : mode === 'voice' ? (
+          <div className="stage">
+            <div className="stage__center">
+              <VoiceOrb state={orbState} levelRef={voice.levelRef} onClick={onOrbClick} label={session ? 'Закончить фразу' : 'Начать разговор'} />
+              <div className="stage__caption" aria-live="polite">
+                {orbState === 'speaking' && lastUser && <span className="stage__heard">«{lastUser.text}»</span>}
+                <span className={orbState === 'listening' && voice.interim ? 'is-live' : ''}>{caption}</span>
+              </div>
+              {lastBot?.turn && !busy && (
+                <button
+                  className="route-pill"
+                  onClick={() => {
+                    setSelectedId(lastBot.id);
                     setTraceOpen(true);
                   }}
-                  onConfirm={(yes) => void handleTurn(yes ? 'Да, подтверждаю' : 'Нет, не нужно', 'text')}
-                />
+                  title="Открыть трассировку"
+                >
+                  {lastBot.turn.route_path === 'fast' ? <IconBolt width={13} height={13} /> : <IconBranch width={13} height={13} />}
+                  <span className="route-pill__name">{lastBot.turn.scenario.name}</span>
+                  <b className={lastBot.turn.scenario.confidence < LOW_CONFIDENCE ? 'warn' : ''}>{pct(lastBot.turn.scenario.confidence)}</b>
+                  <span className="route-pill__ms">{ms(lastBot.turn.timings.route_ms)}</span>
+                </button>
               )}
             </div>
-
-            {error && (
-              <div className="toast" role="alert">
-                <IconAlert width={16} height={16} />
-                <span>{error}</span>
-                <button onClick={voice.clearError} aria-label="Закрыть">
-                  <IconClose width={14} height={14} />
-                </button>
-              </div>
+          </div>
+        ) : (
+          <div className="scroll">
+            {messages.length === 0 ? (
+              <EmptyState onExample={(t) => void handleTurn(t, 'text')} />
+            ) : (
+              <MessageList
+                messages={messages}
+                selectedId={selected?.id ?? null}
+                busy={busy}
+                onSelect={(id) => {
+                  setSelectedId(id);
+                  setTraceOpen(true);
+                }}
+                onConfirm={(yes) => void handleTurn(yes ? 'Да, подтверждаю' : 'Нет, не нужно', 'text')}
+              />
             )}
+          </div>
+        )}
 
-            <Composer
-              disabled={busy}
-              voiceState={voice.state}
-              interim={voice.interim}
-              levelRef={voice.levelRef}
-              micSupported={voice.supported}
-              lang={langHint}
-              onLang={setLangHint}
-              onSend={(t) => void handleTurn(t, 'text')}
-              onMic={startMic}
-              onStopMic={voice.stop}
-            />
-          </>
+        {view === 'chat' && voice.error && (
+          <div className="toast" role="alert">
+            <IconAlert width={16} height={16} />
+            <span>{voice.error}</span>
+            <button onClick={voice.clearError} aria-label="Закрыть">
+              <IconClose width={14} height={14} />
+            </button>
+          </div>
+        )}
+
+        {view === 'chat' && (
+          <Composer
+            mode={mode}
+            busy={busy}
+            voiceState={voice.state}
+            interim={voice.interim}
+            levelRef={voice.levelRef}
+            micSupported={voice.supported}
+            muted={muted}
+            session={session}
+            onSend={(t) => void handleTurn(t, 'text')}
+            onDictate={() => {
+              stopSpeaking();
+              void voice.start();
+            }}
+            onStopDictation={voice.stop}
+            onToggleMute={toggleMute}
+            onStartVoice={startVoiceMode}
+            onEndVoice={endVoiceMode}
+          />
         )}
       </main>
 
-      {view === 'chat' && traceOpen && (
+      {showTrace && (
         <>
           <div className="trace-scrim" onClick={() => setTraceOpen(false)} aria-hidden />
           <TracePanel message={selected} userMessage={selectedUser} turnNo={turnNo} onClose={() => setTraceOpen(false)} onReview={onReview} />
