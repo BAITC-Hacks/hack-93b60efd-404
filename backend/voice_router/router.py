@@ -30,6 +30,12 @@ class SpokenAnswer(BaseModel):
     answer_text: str = Field(description="One or two short, voice-friendly sentences in the requested language")
 
 
+class CoverageMatch(BaseModel):
+    covered: bool | None
+    evidence: str | None = Field(description="Exact matching entry from the supplied package lists")
+    reason: str
+
+
 @dataclass(frozen=True)
 class RouteResult:
     decision: RouteDecision
@@ -154,7 +160,10 @@ class OpenAIRouter:
                     "that exact action in this turn. Reject if they refuse or cancel it. "
                     "If they change any parameter or switch topics, return change_request; "
                     "if uncertain, return unclear. Understand natural Russian, Kazakh, and "
-                    "mixed language. Never treat mere acknowledgement as approval."
+                    "mixed language. A direct, unambiguous affirmation of the read-back "
+                    "details in response to the explicit approval question authorizes "
+                    "the pending action, even when brief. Merely acknowledging that "
+                    "information was heard does not."
                 )},
                 {"role": "user", "content": json.dumps({
                     "pending_action": pending_action,
@@ -190,7 +199,9 @@ class OpenAIRouter:
                     "Answer the customer's actual question in one or two short spoken sentences. "
                     "Use the requested language (ru or kk), translate factual English labels "
                     "naturally, and ask one precise follow-up only if the facts truly do not "
-                    "answer the question. Do not say an action was performed unless its "
+                    "answer the question. Never request a value already supplied in "
+                    "verified_facts. Follow a verified next_step explicitly when provided. "
+                    "Do not say an action was performed unless its "
                     "verified result says so. Do not expose internal scenario IDs. "
                     "The voice is AI-generated, not a human operator."
                 )},
@@ -212,5 +223,111 @@ class OpenAIRouter:
             raise RuntimeError("OpenAI did not return a grounded spoken answer")
         usage = response.usage
         return parsed.answer_text.strip(), (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)
+
+    def compose_approval_prompt(
+        self, *, scenario: dict, language: str, action_name: str,
+        params: dict, preview: dict,
+    ) -> tuple[str, float, int, int]:
+        """Read back the concrete action before a separate approval turn."""
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "Prepare a concise spoken approval request for a fictional insurance case. "
+                    "Speak in the requested language. State the exact operation and its "
+                    "important supplied parameters or verified preview amount; mask most "
+                    "digits of phone numbers and personal IDs. Ask for a separate explicit "
+                    "yes or no. Do not state that the operation, SMS, booking, transfer, "
+                    "refund, or payment has already happened. The backend only records "
+                    "actions in the local synthetic case system. Do not invent facts."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "scenario": scenario["name"], "language": language,
+                    "action": action_name, "parameters": params,
+                    "verified_preview": preview,
+                }, ensure_ascii=False)},
+            ],
+            text_format=SpokenAnswer,
+            max_output_tokens=180,
+        )
+        parsed = response.output_parsed
+        if parsed is None or not parsed.answer_text.strip():
+            raise RuntimeError("OpenAI did not return an approval prompt")
+        usage = response.usage
+        return parsed.answer_text.strip(), (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)
+
+    def match_coverage(
+        self, *, service_name: str, package_name: str, package: dict
+    ) -> tuple[CoverageMatch, float, int, int]:
+        """Match multilingual spoken services to exact official DMS entries."""
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "Determine whether the requested service is explicitly covered by "
+                    "this fictional DMS package. Understand Russian, Kazakh, and English "
+                    "synonyms, but do not infer coverage from broad similarity. Return "
+                    "covered true with an EXACT entry from the covered list, false with an "
+                    "EXACT entry from the not_covered list, or null and null if uncertain. "
+                    "A backend validator will reject any fabricated evidence entry."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "service": service_name, "package": package_name,
+                    "covered": package["covered"],
+                    "not_covered": package["not_covered"],
+                }, ensure_ascii=False)},
+            ],
+            text_format=CoverageMatch,
+            max_output_tokens=130,
+        )
+        parsed = response.output_parsed
+        if parsed is None:
+            raise RuntimeError("OpenAI did not return a DMS coverage match")
+        usage = response.usage
+        return parsed, (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)
+
+    def interpret_purchase_offer(
+        self, *, transcript: str, history: list[dict[str, str]],
+        quote: dict,
+    ) -> tuple[ConfirmationDecision, float, int, int]:
+        """Distinguish accepting a quote from merely updating travel details."""
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "The fictional insurer has quoted travel insurance and offered to "
+                    "start a purchase. Decide whether the current customer utterance "
+                    "explicitly ACCEPTS starting that purchase (approve), DECLINES it "
+                    "(reject), CHANGES quote details or switches topic (change_request), "
+                    "or is unclear. Providing a phone number together with acceptance "
+                    "is still approval. This is only permission to collect details and "
+                    "show a later irreversible-action preview, NOT permission to issue "
+                    "a policy. Understand Russian, Kazakh, and mixed speech."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "quote": quote, "recent_history": history[-4:],
+                    "customer_reply": transcript,
+                }, ensure_ascii=False)},
+            ],
+            text_format=ConfirmationDecision,
+            max_output_tokens=100,
+        )
+        parsed = response.output_parsed
+        if parsed is None:
+            raise RuntimeError("OpenAI did not return a purchase-offer decision")
+        usage = response.usage
+        return parsed, (time.perf_counter() - started) * 1000, (
             usage.input_tokens if usage else 0
         ), (usage.output_tokens if usage else 0)

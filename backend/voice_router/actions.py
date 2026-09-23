@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from datetime import date, timedelta
+from datetime import date
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 from uuid import uuid4
@@ -179,6 +179,7 @@ class ActionExecutor:
             "status": claim["status"],
             "next_step": claim["next_step"],
             "client_id": claim["client_id"],
+            "claim_type": claim["claim_type"],
         }
 
     def _handle_get_offices(self, *, city: str) -> dict[str, Any]:
@@ -220,7 +221,7 @@ class ActionExecutor:
             raise ActionError("ambiguous", "More than one payment matched")
         return {"payment_status": matches[0]["status"], "amount": matches[0]["amount"]}
 
-    def _handle_check_coverage(self, *, policy_number: str, service_name: str) -> dict[str, Any]:
+    def coverage_reference(self, policy_number: str) -> tuple[str, dict[str, Any]]:
         policy = self._policy(policy_number)
         if policy["product"] != "dms":
             raise ActionError("invalid_input", "This is not a DMS policy")
@@ -228,14 +229,18 @@ class ActionExecutor:
         package = self.knowledge["products"]["dms"]["packages"].get(package_name)
         if package is None:
             raise ActionError("unknown_package", "DMS package is not present in the knowledge base")
-        service = service_name.casefold()
-        for entry in package["covered"]:
-            if service in entry.casefold() or entry.casefold() in service:
-                return {"covered": True, "note": f"{service_name}: covered under {package_name}; {entry}."}
-        for entry in package["not_covered"]:
-            if service in entry.casefold() or entry.casefold() in service:
-                return {"covered": False, "note": f"{service_name}: not covered under {package_name}; {entry}."}
-        raise ActionError("unknown_service", "Coverage cannot be determined from the official knowledge base")
+        return package_name, package
+
+    def _handle_check_coverage(self, *, policy_number: str, service_name: str,
+                               covered: bool | None, evidence: str | None) -> dict[str, Any]:
+        package_name, package = self.coverage_reference(policy_number)
+        if covered is None or evidence is None:
+            raise ActionError("unknown_service", "Coverage cannot be determined from the official knowledge base")
+        source = package["covered"] if covered else package["not_covered"]
+        if evidence not in source:
+            raise ActionError("invalid_evidence", "The model's coverage evidence is not in the official package")
+        return {"covered": covered, "note": f"{service_name}: {'covered' if covered else 'not covered'} under {package_name}; {evidence}.",
+                "evidence": evidence, "package": package_name}
 
     def _handle_kb_lookup(self, *, topic: str) -> dict[str, Any]:
         key = topic.casefold().strip()
@@ -256,11 +261,19 @@ class ActionExecutor:
             raise ActionError("unknown_topic", "Topic is not covered by the official knowledge base")
         return {"answer": topics[key], "source": f"knowledge_base.json:{key}"}
 
-    def _handle_create_policy(self, *, product_type: str, phone: str, price: int | None = None) -> dict[str, Any]:
-        if not any(client["phone"] == phone for client in self.data["clients"]):
-            raise ActionError("not_found", "Phone is not in the official synthetic client records")
+    def _handle_create_policy(self, *, product_type: str, phone: str, price: int | None = None,
+                              vehicle_plate: str | None = None,
+                              drivers_iin: list[str] | None = None,
+                              trip_country: str | None = None,
+                              trip_start: str | None = None,
+                              trip_end: str | None = None,
+                              travelers_count: int | None = None) -> dict[str, Any]:
         number = f"SQ-{product_type.upper()}-{uuid4().hex[:6].upper()}"
-        self._record("create_policy", policy_number=number, product_type=product_type, phone=phone, price=price)
+        self._record("create_policy", policy_number=number, product_type=product_type,
+                     phone=phone, price=price, vehicle_plate=vehicle_plate,
+                     drivers_iin=drivers_iin, trip_country=trip_country,
+                     trip_start=trip_start, trip_end=trip_end,
+                     travelers_count=travelers_count)
         return {"policy_number": number, "status": "pending_payment", "delivery": "not_sent"}
 
     def _handle_renew_policy(self, *, policy_number: str) -> dict[str, Any]:
@@ -284,9 +297,25 @@ class ActionExecutor:
 
     def _handle_cancel_policy(self, *, policy_number: str, cancel_reason: str) -> dict[str, Any]:
         policy = self._policy(policy_number)
+        refund = self.preview_cancel_policy(policy_number)["refund_amount"]
         self._record("cancel_policy", policy_number=policy_number, reason=cancel_reason)
         policy["status"] = "cancellation_requested"
-        return {"refund_amount": None, "status": "refund_requires_operator_calculation"}
+        return {"refund_amount": refund, "status": "cancellation_recorded_locally_refund_not_sent"}
+
+    def preview_cancel_policy(self, policy_number: str) -> dict[str, Any]:
+        policy = self._policy(policy_number)
+        if any(claim["policy_number"] == policy_number and claim["status"] == "paid"
+               for claim in self.data["claims"]):
+            return {"refund_amount": 0, "unused_full_months": 0,
+                    "reason": "A paid claim exists under the policy"}
+        end = date.fromisoformat(policy["end_date"])
+        unused = max(0, (end.year - DATA_DATE.year) * 12 + end.month - DATA_DATE.month
+                     + int(end.day + 1 >= DATA_DATE.day))
+        unused = min(12, unused)
+        amount = (Decimal(str(policy["premium"])) * Decimal(unused) / Decimal(12)
+                  * Decimal("0.9")).quantize(Decimal("1"), rounding=ROUND_HALF_UP)
+        return {"refund_amount": int(amount), "unused_full_months": unused,
+                "formula": self.knowledge["cancellation"]["refund_formula"]}
 
     def _handle_create_claim(self, *, product_type: str, incident_date: str,
                              incident_description: str, client_id: str | None = None,

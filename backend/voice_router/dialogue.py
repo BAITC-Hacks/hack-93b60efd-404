@@ -30,6 +30,8 @@ class SessionState:
     response_ms: float = 0
     response_input_tokens: int = 0
     response_output_tokens: int = 0
+    travel_quote: dict[str, Any] | None = None
+    travel_purchase_requested: bool = False
     lock: Lock = field(default_factory=Lock, repr=False)
 
 
@@ -119,9 +121,25 @@ class DialogueService:
             )
             if needs_slots:
                 extraction = self.slot_extractor.extract(transcript, route_ids)
+                if ("phone" in extraction.values and state.slot_values.get("phone")
+                        not in {None, extraction.values["phone"]}):
+                    state.slot_values.pop("policy_number", None)
+                    state.slot_values.pop("claim_number", None)
+                if ("trip_country" in extraction.values and
+                        state.slot_values.get("trip_country")
+                        not in {None, extraction.values["trip_country"]}):
+                    state.slot_values.pop("trip_zone", None)
+                if any(
+                    key in extraction.values and state.slot_values.get(key)
+                    not in {None, extraction.values[key]}
+                    for key in ("trip_country", "trip_start", "trip_end", "travelers_count", "traveler_max_age")
+                ):
+                    state.travel_quote = None
+                    state.travel_purchase_requested = False
                 state.slot_values.update(extraction.values)
                 response_language = extraction.response_language
                 state.response_language = response_language
+            self._resolve_known_slots(state, scenario)
             missing = [
                 name for name in scenario["slots"]["required"] if name not in state.slot_values
             ]
@@ -189,6 +207,39 @@ class DialogueService:
             },
         }
 
+    def _resolve_known_slots(self, state: SessionState, scenario: dict[str, Any]) -> None:
+        """Reuse unique official case records, never guess among multiple matches."""
+        values = state.slot_values
+        if "claim_number" in values and "product_type" in scenario["slots"]["required"]:
+            try:
+                claim = self.actions.execute("get_claim", claim_number=values["claim_number"])
+                values.setdefault("product_type", claim["claim_type"])
+            except ActionError:
+                pass
+        if not scenario["requires_identification"] or "phone" not in values:
+            return
+        try:
+            client_id = self.actions.execute("find_client", phone=values["phone"])["client_id"]
+        except ActionError:
+            return
+        if "claim_number" in scenario["slots"]["required"] and "claim_number" not in values:
+            try:
+                claim = self.actions.execute("get_claim", client_id=client_id)
+                values["claim_number"] = claim["claim_number"]
+            except ActionError:
+                pass
+        if ("policy_number" in scenario["slots"]["required"] or
+                scenario["scenario_id"] == "SC26") and "policy_number" not in values:
+            try:
+                policies = self.actions.execute("get_policies", client_id=client_id)["policies"]
+            except ActionError:
+                return
+            product = values.get("product_type")
+            if product:
+                policies = [policy for policy in policies if policy["product"] == product]
+            if len(policies) == 1:
+                values["policy_number"] = policies[0]["policy_number"]
+
     def _answer_with_data(
         self, state: SessionState, scenario_id: str, language: str,
         values: dict[str, Any], transcript: str,
@@ -232,7 +283,7 @@ class DialogueService:
             "SC03": ("calc_casco_price", ("car_value", "car_year")),
             "SC04": ("update_policy", ("policy_number", "new_driver_iin")),
             "SC05": ("update_policy", ("policy_number", "vehicle_plate")),
-            "SC06": ("create_policy", ("trip_country", "trip_start", "trip_end", "travelers_count", "traveler_max_age", "phone")),
+            "SC06": ("create_policy", ("trip_country", "trip_start", "trip_end", "travelers_count", "traveler_max_age")),
             "SC07": ("calc_property_price", ("property_type", "sum_insured")),
             "SC08": ("calc_accident_price", ("sum_insured",)),
             "SC09": ("kb_lookup", ()),
@@ -281,7 +332,8 @@ class DialogueService:
                     vehicle_type=values["vehicle_type"], drivers_iin=values["drivers_iin"])
             except ActionError as exc:
                 return str(exc), [{"name": "calc_ogpo_price", "status": "error", "error_code": exc.code}]
-            params = {"product_type": "ogpo", "phone": values["phone"], "price": quote["price"]}
+            params = {"product_type": "ogpo", "phone": values["phone"], "price": quote["price"],
+                      "vehicle_plate": values["vehicle_plate"], "drivers_iin": values["drivers_iin"]}
         elif scenario_id == "SC06":
             if "trip_zone" not in values:
                 return (
@@ -295,7 +347,42 @@ class DialogueService:
                 })
             except ActionError as exc:
                 return str(exc), [{"name": "calc_travel_price", "status": "error", "error_code": exc.code}]
-            params = {"product_type": "travel", "phone": values["phone"], "price": quote["price"]}
+            if state.travel_quote is not None and not state.travel_purchase_requested:
+                offer, offer_ms, offer_input, offer_output = self.router.interpret_purchase_offer(
+                    transcript=transcript, history=state.history, quote=state.travel_quote,
+                )
+                state.response_ms += offer_ms
+                state.response_input_tokens += offer_input
+                state.response_output_tokens += offer_output
+                if offer.decision == "approve":
+                    state.travel_purchase_requested = True
+                elif offer.decision == "reject":
+                    state.travel_quote = None
+                    return ("Хорошо, оформление не начинаю." if language == "ru"
+                        else "Жақсы, рәсімдеуді бастамаймын."), []
+                elif offer.decision == "unclear":
+                    return ("Хотите оформить этот рассчитанный полис?" if language == "ru"
+                        else "Осы есептелген полисті рәсімдегіңіз келе ме?"), []
+            if not state.travel_purchase_requested:
+                state.travel_quote = quote
+                answer, state.response_ms, state.response_input_tokens, state.response_output_tokens = (
+                    self.router.compose_answer(
+                        transcript=transcript, scenario=scenario, language=language,
+                        facts={**quote, "travelers_count": values["travelers_count"],
+                               "traveler_max_age": values["traveler_max_age"],
+                               "trip_country": values["trip_country"],
+                               "trip_start": values["trip_start"], "trip_end": values["trip_end"],
+                               "quote_complete": True,
+                               "next_step": "State the price and coverage, then ask whether to purchase. Do not ask more quote questions."},
+                        history=state.history,
+                    )
+                )
+                return answer, [{"name": "calc_travel_price", "status": "executed", "result": quote}]
+            if "phone" not in values:
+                return self.catalog.slots["phone"]["prompt"][language], []
+            params = {"product_type": "travel", "phone": values["phone"], "price": quote["price"],
+                      "trip_country": values["trip_country"], "trip_start": values["trip_start"],
+                      "trip_end": values["trip_end"], "travelers_count": values["travelers_count"]}
         elif scenario_id in {"SC12", "SC13", "SC14", "SC16"}:
             params = {"product_type": {"SC12": "ogpo", "SC13": "casco", "SC14": "property", "SC16": "accident"}[scenario_id],
                       "incident_date": values["incident_date"], "incident_description": values["incident_description"],
@@ -306,6 +393,20 @@ class DialogueService:
                 "new_driver_iin" if scenario_id == "SC04" else "vehicle_plate"]
         elif scenario_id in {"SC29", "SC30"}:
             params["client_id"] = identified_client_id
+        elif scenario_id == "SC22":
+            try:
+                package_name, package = self.actions.coverage_reference(values["policy_number"])
+                match, match_ms, match_input, match_output = self.router.match_coverage(
+                    service_name=values["service_name"], package_name=package_name,
+                    package=package,
+                )
+            except ActionError as exc:
+                return str(exc), [{"name": action_name, "status": "error", "error_code": exc.code}]
+            state.response_ms += match_ms
+            state.response_input_tokens += match_input
+            state.response_output_tokens += match_output
+            params["covered"] = match.covered
+            params["evidence"] = match.evidence
         elif action_name == "kb_lookup":
             params = {"topic": {"SC09": "dms", "SC18": "claim_documents", "SC24": "dms",
                 "SC31": "payments", "SC34": "app_help", "SC40": "policy_terms"}[scenario_id]}
@@ -325,14 +426,30 @@ class DialogueService:
             ), [{"name": action_name, "status": "already_executed"}]
 
         if self.catalog.actions[action_name]["irreversible"]:
-            state.pending_confirmation = {"name": action_name, "params": params, "scenario_id": scenario_id,
-                                          "language": language}
-            prompt = (
-                f"Подтвердите действие: {scenario['name']}. Скажите «да» для записи в локальной системе кейса или «нет» для отмены."
-                if language == "ru" else
-                f"Әрекетті растаңыз: {scenario['name']}. Жергілікті кейс жүйесіне жазу үшін «иә», бас тарту үшін «жоқ» деңіз."
+            preview = (
+                self.actions.preview_cancel_policy(params["policy_number"])
+                if action_name == "cancel_policy" else {}
             )
-            return prompt, [{"name": action_name, "status": "awaiting_confirmation", "params": params}]
+            if scenario_id == "SC06":
+                preview = {"destination": values["trip_country"], "dates": [values["trip_start"], values["trip_end"]],
+                           "travelers_count": values["travelers_count"], "coverage": quote["coverage"],
+                           "price_kzt": quote["price"]}
+            elif scenario_id == "SC02":
+                preview = {"vehicle_plate": values["vehicle_plate"],
+                           "drivers_count": len(values["drivers_iin"]), "price_kzt": quote["price"]}
+            elif scenario_id == "SC27":
+                preview = {"previous_policy": params["policy_number"],
+                           "price_kzt": self.actions._policy(params["policy_number"])["premium"]}
+            state.pending_confirmation = {"name": action_name, "params": params, "scenario_id": scenario_id,
+                                          "language": language, "preview": preview}
+            prompt, state.response_ms, state.response_input_tokens, state.response_output_tokens = (
+                self.router.compose_approval_prompt(
+                    scenario=scenario, language=language, action_name=action_name,
+                    params=params, preview=preview,
+                )
+            )
+            return prompt, [{"name": action_name, "status": "awaiting_confirmation",
+                             "params": params, "preview": preview}]
         try:
             result = self.actions.execute(action_name, **params)
         except ActionError as exc:
@@ -341,12 +458,15 @@ class DialogueService:
             state.executed_action_keys.add(action_key)
 
         if not self._has_side_effect(action_name):
-            answer, state.response_ms, state.response_input_tokens, state.response_output_tokens = (
+            answer, answer_ms, answer_input, answer_output = (
                 self.router.compose_answer(
                     transcript=transcript, scenario=scenario, language=language,
                     facts=result, history=state.history,
                 )
             )
+            state.response_ms += answer_ms
+            state.response_input_tokens += answer_input
+            state.response_output_tokens += answer_output
         elif action_name == "transfer_to_operator":
             answer = (f"Запрос {result['handoff_id']} записан для оператора в локальной системе. Живое соединение пока не подключено."
                 if language == "ru" else f"{result['handoff_id']} сұрауы жергілікті жүйеге жазылды. Оператормен тікелей қосылу әлі қосылмаған.")
