@@ -210,12 +210,16 @@ class DialogueService:
             "answer_text": answer,
             "language": response_language,
             "route": route_ids,
+            "route_details": [self.catalog.route_summary(item) for item in route_ids],
             "active_scenario": state.active_scenario,
             "pending_scenarios": list(state.pending_scenarios),
             "trace": {
                 "transcript": transcript,
                 "selected_scenarios": route_ids,
                 "alternatives": decision.alternatives,
+                "alternative_details": [
+                    self.catalog.route_summary(item) for item in decision.alternatives
+                ],
                 "reason": decision.reason,
                 "is_continuation": decision.is_continuation,
                 "model": result.model,
@@ -709,10 +713,11 @@ class DialogueService:
         state.turn_count += 1
         return {"session_id": state.session_id, "turn": state.turn_count, "answer_text": answer,
                 "language": language, "route": [pending["scenario_id"]],
+                "route_details": [self.catalog.route_summary(pending["scenario_id"])],
                 "active_scenario": state.active_scenario,
                 "pending_scenarios": list(state.pending_scenarios),
                 "trace": {"transcript": transcript, "selected_scenarios": [pending["scenario_id"]],
-                          "alternatives": [], "reason": reason,
+                          "alternatives": [], "alternative_details": [], "reason": reason,
                           "model": self.router.model, "router_ms": round(model_ms, 1), "extractor_ms": 0,
                           "response_ms": round(state.response_ms, 1),
                           "total_ms": round((time.perf_counter() - started) * 1000, 1),

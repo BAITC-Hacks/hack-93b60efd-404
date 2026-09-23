@@ -10,7 +10,7 @@ From the repository root, after `uv sync` and setting server-side `OPENAI_API_KE
 uv run python -m voice_router.server
 ```
 
-The default base URL is `http://127.0.0.1:8000`. `VOICE_ROUTER_HOST` and `VOICE_ROUTER_PORT` change the listener; `VOICE_ROUTER_CORS_ORIGIN` restricts the allowed browser origin. The default CORS wildcard is suitable only for local development. `GET /health` reports process liveness, not OpenAI availability.
+The default base URL is `http://127.0.0.1:8000`. `VOICE_ROUTER_HOST` and `VOICE_ROUTER_PORT` change the listener; `VOICE_ROUTER_CORS_ORIGIN` restricts the allowed browser origin. The default CORS wildcard is suitable only for local development. `GET /health` reports process liveness, not OpenAI availability. `GET /catalog` returns the 40 official scenario labels and three system-intent labels for the supervisor view.
 
 ## One browser conversation
 
@@ -23,9 +23,9 @@ For text-only diagnostics, `POST /sessions/{session_id}/turns/text` accepts `app
 
 ## Response fields
 
-Every successful turn returns `session_id`, `turn`, `answer_text`, `language` (`ru` or `kk`), ordered `route` IDs, `active_scenario`, `pending_scenarios`, and `trace`. Spoken turns also include `audio_url` and `audio_content_type`. Render `route`, `trace.reason`, and `trace.alternatives` in the supervisor view; do not hide the model decision behind the conversational answer.
+Every successful turn returns `session_id`, `turn`, `answer_text`, `language` (`ru` or `kk`), ordered `route` IDs plus `route_details` with human-readable names, `active_scenario`, `pending_scenarios`, and `trace`. Spoken turns also include `audio_url` and `audio_content_type`. Render `route_details`, `trace.reason`, and `trace.alternative_details` in the supervisor view; do not hide the model decision behind the conversational answer.
 
-`trace` includes the final `transcript`, selected scenario IDs, alternatives, short reason, model name, `router_ms`, `extractor_ms`, `stt_ms` (audio turns), `tts_generation_ms` (spoken answers), `server_total_ms`, token counts, rejected slots, and action results. `tts_first_audio_ms` is currently null because actual browser playback start is not instrumented. Do not label `tts_generation_ms` as first-audio latency. For compound requests, display every ID in `route` and the deferred IDs in `pending_scenarios`.
+`trace` includes the final `transcript`, selected scenario IDs, alternatives, short reason, model name, `ambiguity_reviewed`, `is_continuation`, `router_ms`, `extractor_ms`, `response_ms`, `stt_ms` (audio turns), `tts_generation_ms` (spoken answers), `server_total_ms`, token counts, rejected slots, and action results. `tts_first_audio_ms` is currently null because actual browser playback start is not instrumented. Do not label `tts_generation_ms` as first-audio latency. For compound requests, display every ID in `route` and the deferred IDs in `pending_scenarios`.
 
 An irreversible action returns `trace.actions[].status = "awaiting_confirmation"` and asks the customer to approve or cancel. The next spoken reply is interpreted by the LLM in that pending-action context. Only an unambiguous approval allows execution. The same action parameters are not executed twice in one session. Some non-irreversible case actions create a local record, but no external SMS, payment, live operator call, or actual booking is claimed.
 

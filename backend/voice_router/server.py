@@ -137,6 +137,14 @@ def create_handler(app: Application) -> type[BaseHTTPRequestHandler]:
             if self.path == "/health":
                 self._send_json(200, {"status": "process_running"})
                 return
+            if self.path == "/catalog":
+                self._send_json(200, {
+                    "scenarios": [app.catalog.route_summary(item["scenario_id"])
+                                  for item in app.catalog.scenarios],
+                    "system_intents": [app.catalog.route_summary(item["id"])
+                                       for item in app.catalog.system_intents],
+                })
+                return
             match = re.fullmatch(r"/audio/([a-f0-9]{32})", self.path)
             if match:
                 with app.audio_lock:

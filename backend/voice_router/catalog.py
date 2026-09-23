@@ -46,6 +46,15 @@ class Catalog:
                 return system_intent
         raise ValueError(f"Unknown route ID: {scenario_id}")
 
+    def route_summary(self, scenario_id: str) -> dict[str, str]:
+        item = self.require_route(scenario_id)
+        return {
+            "id": scenario_id,
+            "name": item.get("name", item["description"]),
+            "description": item["description"],
+            "priority": item.get("priority", "system"),
+        }
+
     def routing_context(self) -> list[dict[str, Any]]:
         """Keep the authoritative scenario boundaries visible to the LLM."""
         return [
