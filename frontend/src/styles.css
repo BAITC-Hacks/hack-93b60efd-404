@@ -10,7 +10,6 @@
   --accent: #00805f;
   --accent-ink: #006b4f;
   --accent-soft: #e7f8f3;
-  --mint: #64f995;
   --dark: #071222;
   --warn: #9a6300;
   --warn-soft: #fff6e3;
@@ -212,9 +211,9 @@ h1, h2, h3 { margin: 0; }
 .round--light { background: var(--bg); color: var(--ink); box-shadow: var(--lift); }
 .round--light:hover:not(:disabled) { background: var(--soft); }
 .round--light.is-muted { background: var(--bad-soft); color: var(--bad); }
-.round--light.is-rec { background: var(--mint); color: var(--dark); animation: pulse 1.6s infinite; }
-.round--mint { background: var(--mint); color: var(--dark); box-shadow: var(--lift); }
-.round--mint:hover:not(:disabled) { background: #4ff086; }
+.round--light.is-rec { background: var(--accent); color: #fff; animation: pulse 1.6s infinite; }
+.round--accent { background: var(--accent); color: #fff; box-shadow: 0 6px 18px -6px rgb(0 128 95 / .55); }
+.round--accent:hover:not(:disabled) { background: var(--accent-ink); }
 .round--dark { background: var(--dark); color: #fff; }
 .round--dark:hover:not(:disabled) { background: var(--ink); }
 @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgb(0 128 95 / .4); } 70% { box-shadow: 0 0 0 12px rgb(0 128 95 / 0); } 100% { box-shadow: 0 0 0 0 rgb(0 128 95 / 0); } }

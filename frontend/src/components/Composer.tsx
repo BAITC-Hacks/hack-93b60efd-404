@@ -144,7 +144,7 @@ export function Composer(p: Props) {
               {p.muted ? <IconMicOff width={18} height={18} /> : <IconMic width={18} height={18} />}
             </button>
           ) : (
-            <button className="round round--mint" onClick={p.onStartVoice} disabled={!p.micSupported} aria-label="Начать говорить">
+            <button className="round round--accent" onClick={p.onStartVoice} disabled={!p.micSupported} aria-label="Начать говорить">
               <IconMic width={18} height={18} />
             </button>
           )
