@@ -115,17 +115,21 @@ h1, h2, h3 { margin: 0; }
 }
 .side--wide { --side-w: min(640px, calc(100vw - 64px - 32px - 214px)); }
 .side.is-closing { animation: side-out .34s cubic-bezier(.4, 0, .2, 1) forwards; pointer-events: none; }
-/* tuck the panel fully behind the phone, then let it slide out as the row opens */
+/* shrink and center the panel under the opaque screen so its corners never peek past the bezel */
 @keyframes side-in {
   from {
     margin-left: calc(-1 * var(--side-w) - 32px);
-    transform: translateX(calc(var(--phone-w) - var(--side-w)));
+    transform: translateX(calc((var(--phone-w) - var(--side-w)) / 2)) scale(calc(0.84 * var(--phone-w) / var(--side-w)));
+    border-radius: 52px;
+    box-shadow: none;
   }
 }
 @keyframes side-out {
   to {
     margin-left: calc(-1 * var(--side-w) - 32px);
-    transform: translateX(calc(var(--phone-w) - var(--side-w)));
+    transform: translateX(calc((var(--phone-w) - var(--side-w)) / 2)) scale(calc(0.84 * var(--phone-w) / var(--side-w)));
+    border-radius: 52px;
+    box-shadow: none;
   }
 }
 .is-framed .phone-slot {
