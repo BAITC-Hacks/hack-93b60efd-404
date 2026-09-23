@@ -219,7 +219,8 @@ class ActionExecutor:
             raise ActionError("not_found", "Payment not found for this client and date")
         if len(matches) != 1:
             raise ActionError("ambiguous", "More than one payment matched")
-        return {"payment_status": matches[0]["status"], "amount": matches[0]["amount"]}
+        return {"payment_status": matches[0]["status"], "amount": matches[0]["amount"],
+                "policy_number": matches[0]["policy_number"]}
 
     def coverage_reference(self, policy_number: str) -> tuple[str, dict[str, Any]]:
         policy = self._policy(policy_number)
@@ -392,8 +393,10 @@ class ActionExecutor:
         event = self._record("report_fraud", fraud_details=fraud_details)
         return {"ticket_id": event["id"]}
 
-    def _handle_transfer_to_operator(self, *, queue: str = "general",
+    def _handle_transfer_to_operator(self, *, queue: str = "operator_general",
                                      summary: str = "") -> dict[str, Any]:
+        if queue not in self.catalog.handoff_queues:
+            raise ActionError("invalid_queue", "Handoff queue is not in the official action catalog")
         event = self._record("transfer_to_operator", queue=queue, summary=summary)
         return {"handoff_id": event["id"], "status": "queued_locally_no_live_operator",
                 "queue": queue, "summary": summary}

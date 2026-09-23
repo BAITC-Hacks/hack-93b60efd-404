@@ -36,6 +36,11 @@ class CoverageMatch(BaseModel):
     reason: str
 
 
+class HandoffDecision(BaseModel):
+    handoff: bool
+    reason: str
+
+
 @dataclass(frozen=True)
 class RouteResult:
     decision: RouteDecision
@@ -203,6 +208,9 @@ class OpenAIRouter:
                     "verified_facts. Follow a verified next_step explicitly when provided. "
                     "Do not say an action was performed unless its "
                     "verified result says so. Do not expose internal scenario IDs. "
+                    "SMS delivery, payment, booking and live operator connections are "
+                    "NOT available in this local backend. Never claim they were done, "
+                    "even if a style reference or product description mentions them. "
                     "The voice is AI-generated, not a human operator."
                 )},
                 {"role": "user", "content": json.dumps({
@@ -212,6 +220,8 @@ class OpenAIRouter:
                     "scenario_name": scenario["name"],
                     "scenario_description": scenario["description"],
                     "verified_facts": facts,
+                    "live_integrations": {"sms": False, "payments": False,
+                                          "bookings": False, "operator_connection": False},
                     "style_reference": scenario["responses"][language],
                 }, ensure_ascii=False)},
             ],
@@ -327,6 +337,46 @@ class OpenAIRouter:
         parsed = response.output_parsed
         if parsed is None:
             raise RuntimeError("OpenAI did not return a purchase-offer decision")
+        usage = response.usage
+        return parsed, (time.perf_counter() - started) * 1000, (
+            usage.input_tokens if usage else 0
+        ), (usage.output_tokens if usage else 0)
+
+    def decide_conditional_handoff(
+        self, *, scenario: dict, transcript: str,
+        history: list[dict[str, str]], action_result: dict,
+    ) -> tuple[HandoffDecision, float, int, int]:
+        """Apply the official scenario's handoff condition semantically."""
+        handoff = scenario.get("handoff")
+        if handoff is None:
+            raise ValueError("Scenario has no handoff condition")
+        started = time.perf_counter()
+        response = self.client.responses.parse(
+            model=self.model,
+            reasoning={"effort": "none"},
+            input=[
+                {"role": "system", "content": (
+                    "Apply ONLY the supplied official handoff condition to the "
+                    "customer's actual conversation and verified action result. "
+                    "Understand Russian, Kazakh, and mixed speech. Choose true when "
+                    "the condition is clearly met; otherwise false. Do not infer an "
+                    "injury, theft, payment failure, or code disclosure that was not said "
+                    "or verified. This queues context locally; it does not connect a live operator."
+                )},
+                {"role": "user", "content": json.dumps({
+                    "scenario": scenario["name"],
+                    "handoff_condition": handoff["when"],
+                    "customer_utterance": transcript,
+                    "recent_history": history[-6:],
+                    "verified_action_result": action_result,
+                }, ensure_ascii=False)},
+            ],
+            text_format=HandoffDecision,
+            max_output_tokens=100,
+        )
+        parsed = response.output_parsed
+        if parsed is None:
+            raise RuntimeError("OpenAI did not return a handoff decision")
         usage = response.usage
         return parsed, (time.perf_counter() - started) * 1000, (
             usage.input_tokens if usage else 0

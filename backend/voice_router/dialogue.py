@@ -425,7 +425,7 @@ class DialogueService:
             params = {"topic": {"SC09": "dms", "SC18": "claim_documents", "SC24": "dms",
                 "SC31": "payments", "SC34": "app_help", "SC40": "policy_terms"}[scenario_id]}
         elif action_name == "transfer_to_operator":
-            params = {"queue": {"SC10": "corporate", "SC11": "emergency", "SC15": "travel_assistance"}.get(scenario_id, "general"),
+            params = {"queue": (scenario.get("handoff") or {}).get("queue", "operator_general"),
                       "summary": " | ".join(
                           [entry["content"] for entry in state.history[-6:] if entry["role"] == "client"]
                           + [transcript]
@@ -455,7 +455,8 @@ class DialogueService:
                 preview = {"previous_policy": params["policy_number"],
                            "price_kzt": self.actions._policy(params["policy_number"])["premium"]}
             state.pending_confirmation = {"name": action_name, "params": params, "scenario_id": scenario_id,
-                                          "language": language, "preview": preview}
+                                          "language": language, "preview": preview,
+                                          "request_transcript": transcript}
             prompt, state.response_ms, state.response_input_tokens, state.response_output_tokens = (
                 self.router.compose_approval_prompt(
                     scenario=scenario, language=language, action_name=action_name,
@@ -477,14 +478,50 @@ class DialogueService:
                 ]
             result = {"answer": selected, "product_type": values["product_type"],
                       "source": result["source"]}
+        if scenario_id == "SC30" and result["payment_status"] == "charged_policy_not_issued":
+            handoff_params = {"queue": scenario["handoff"]["queue"],
+                              "summary": " | ".join(
+                                  [entry["content"] for entry in state.history[-6:]
+                                   if entry["role"] == "client"] + [transcript]
+                              )[-700:]}
+            handoff_key = self._action_key("transfer_to_operator", handoff_params)
+            if handoff_key not in state.executed_action_keys:
+                handoff = self.actions.execute("transfer_to_operator", **handoff_params)
+                state.executed_action_keys.add(handoff_key)
+                handoff_status = "executed"
+            else:
+                handoff = {"status": "already_queued"}
+                handoff_status = "already_executed"
+            answer = (
+                f"В данных кейса найден платёж {result['amount']} тенге без выпущенного полиса. "
+                f"Обращение {handoff.get('handoff_id', '')} записано в локальную очередь специалиста; живое соединение пока не подключено."
+                if language == "ru" else
+                f"Кейс деректерінде {result['amount']} теңге төлем бар, бірақ полис шықпаған. "
+                f"{handoff.get('handoff_id', '')} өтініші маманның жергілікті кезегіне жазылды; тікелей қосылу әлі жоқ."
+            )
+            return answer, [{"name": action_name, "status": "executed", "result": result},
+                            {"name": "transfer_to_operator", "status": handoff_status,
+                             "result": handoff}]
         if self._has_side_effect(action_name):
             state.executed_action_keys.add(action_key)
 
         if not self._has_side_effect(action_name):
+            facts = dict(result)
+            product_key = {"SC01": "ogpo", "SC03": "casco", "SC07": "property",
+                           "SC08": "accident"}.get(scenario_id)
+            if product_key:
+                product = self.catalog.knowledge_base["products"][product_key]
+                facts["product_facts"] = (
+                    {"packages": {"Standard": product["packages"]["Standard"]}}
+                    if product_key == "casco" else
+                    {"covers": product["covers"]}
+                )
+            if scenario_id == "SC32":
+                facts["bonus_malus_facts"] = self.catalog.knowledge_base["bonus_malus"]
             answer, answer_ms, answer_input, answer_output = (
                 self.router.compose_answer(
                     transcript=transcript, scenario=scenario, language=language,
-                    facts=result, history=state.history,
+                    facts=facts, history=state.history,
                 )
             )
             state.response_ms += answer_ms
@@ -513,7 +550,14 @@ class DialogueService:
                 answer = scenario["responses"][language]["closing"].format(**result)
             except KeyError:
                 answer = scenario["responses"][language]["opening"]
-        return answer, [{"name": action_name, "status": "executed", "result": result}]
+        action_trace = [{"name": action_name, "status": "executed", "result": result}]
+        if scenario_id in {"SC34", "SC35", "SC38"}:
+            suffix, handoff_trace = self._conditional_handoff(
+                state, scenario, transcript, result, language
+            )
+            answer += suffix
+            action_trace.extend(handoff_trace)
+        return answer, action_trace
 
     @staticmethod
     def _ownership_denied(language: str) -> str:
@@ -530,6 +574,37 @@ class DialogueService:
             "resend_documents", "request_document",
         }
 
+    def _conditional_handoff(
+        self, state: SessionState, scenario: dict[str, Any], transcript: str,
+        action_result: dict[str, Any], language: str,
+    ) -> tuple[str, list[dict[str, Any]]]:
+        decision, elapsed, input_tokens, output_tokens = self.router.decide_conditional_handoff(
+            scenario=scenario, transcript=transcript, history=state.history,
+            action_result=action_result,
+        )
+        state.response_ms += elapsed
+        state.response_input_tokens += input_tokens
+        state.response_output_tokens += output_tokens
+        if not decision.handoff:
+            return "", []
+        params = {"queue": scenario["handoff"]["queue"],
+                  "summary": " | ".join(
+                      [entry["content"] for entry in state.history[-6:] if entry["role"] == "client"]
+                      + [transcript]
+                  )[-700:]}
+        key = self._action_key("transfer_to_operator", params)
+        if key in state.executed_action_keys:
+            return "", [{"name": "transfer_to_operator", "status": "already_executed"}]
+        result = self.actions.execute("transfer_to_operator", **params)
+        state.executed_action_keys.add(key)
+        suffix = (
+            f" Обращение {result['handoff_id']} также записано в локальную очередь специалиста; живое соединение не подключено."
+            if language == "ru" else
+            f" {result['handoff_id']} өтініші маманның жергілікті кезегіне жазылды; тікелей қосылу қосылмаған."
+        )
+        return suffix, [{"name": "transfer_to_operator", "status": "executed",
+                         "reason": decision.reason, "result": result}]
+
     def _resolve_confirmation(self, state: SessionState, transcript: str,
                               decision: str, reason: str, model_ms: float,
                               input_tokens: int, output_tokens: int) -> dict[str, Any]:
@@ -537,6 +612,9 @@ class DialogueService:
         assert pending is not None
         language = pending["language"]
         started = time.perf_counter()
+        state.response_ms = 0
+        state.response_input_tokens = 0
+        state.response_output_tokens = 0
         action_trace: list[dict[str, Any]] = []
         if decision == "unclear":
             answer = ("Не расслышал однозначного подтверждения. Подтвердите именно это действие или отмените его."
@@ -563,6 +641,13 @@ class DialogueService:
                         if language == "ru" else
                         f"Расталды: әрекет жергілікті кейс жүйесіне жазылды{f' ({identifier})' if identifier else ''}. "
                         "SMS, төлем және оператормен тікелей қосылу бұл нұсқада орындалмайды.")
+                    if pending["scenario_id"] in {"SC13", "SC14", "SC19"}:
+                        suffix, additional = self._conditional_handoff(
+                            state, self.catalog.require_route(pending["scenario_id"]),
+                            pending["request_transcript"], result, language,
+                        )
+                        answer += suffix
+                        action_trace.extend(additional)
             except ActionError as exc:
                 answer = str(exc)
                 action_trace = [{"name": pending["name"], "status": "error", "error_code": exc.code}]
@@ -576,9 +661,12 @@ class DialogueService:
                 "trace": {"transcript": transcript, "selected_scenarios": [pending["scenario_id"]],
                           "alternatives": [], "reason": reason,
                           "model": self.router.model, "router_ms": round(model_ms, 1), "extractor_ms": 0,
+                          "response_ms": round(state.response_ms, 1),
                           "total_ms": round((time.perf_counter() - started) * 1000, 1),
                           "stt_ms": None, "tts_first_audio_ms": None,
-                          "input_tokens": input_tokens, "output_tokens": output_tokens, "rejected_slots": [],
+                          "input_tokens": input_tokens + state.response_input_tokens,
+                          "output_tokens": output_tokens + state.response_output_tokens,
+                          "rejected_slots": [],
                           "actions": action_trace}}
 
     def _system_answer(self, route_id: str, language: str, alternatives: list[str]) -> str:

@@ -24,6 +24,7 @@ class Catalog:
     scenarios: tuple[dict[str, Any], ...]
     system_intents: tuple[dict[str, Any], ...]
     actions: dict[str, dict[str, Any]]
+    handoff_queues: frozenset[str]
     slots: dict[str, dict[str, Any]]
     knowledge_base: dict[str, Any]
     mock_backend: dict[str, Any]
@@ -96,6 +97,7 @@ def load_catalog(dataset_dir: Path = DATASET_DIR) -> Catalog:
         scenarios=scenarios,
         system_intents=system_intents,
         actions=actions,
+        handoff_queues=frozenset(actions_doc["queues"]),
         slots=slots,
         knowledge_base=_read_json(dataset_dir / "knowledge_base.json"),
         mock_backend=_read_json(dataset_dir / "mock_backend.json"),
