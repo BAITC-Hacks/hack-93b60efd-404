@@ -47,6 +47,8 @@ def main() -> None:
             "expected": utterance["expected"],
             "predicted": result.decision.scenario_ids,
             "alternatives": result.decision.alternatives,
+            "language": result.decision.language,
+            "is_continuation": result.decision.is_continuation,
             "reason": result.decision.reason,
             "router_ms": round(result.router_ms, 1),
             "input_tokens": result.input_tokens,

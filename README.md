@@ -6,7 +6,7 @@ Case 2 of HackAlem AI: a Russian/Kazakh voice assistant for the fictional Saqta 
 
 ## Implemented capabilities
 
-The official 40-scenario kit is present without content changes. The backend validates scenario/action/slot references and uses the OpenAI Responses API for a structured, catalogue-backed text routing decision. A real `gpt-6-luna` run routed 17/17 selected development utterances correctly; this is a **small selected slice, not full-set or hidden-set accuracy**. See the [Russian functional specification and backend implementation plan](docs/VOICE_ROUTER_PLAN_RU.md) and [experiment record](docs/experiments/2026-09-23-luna-sol-routing.md).
+The official 40-scenario kit is present without content changes. The backend validates scenario/action/slot references and uses the OpenAI Responses API for a structured, catalogue-backed text routing decision. On the official 104-utterance **development** set, the revised Luna prompt reached 103/104 primary and full matches; this set informed the prompt change and is **not hidden-set accuracy**. Sol matched Luna on a fixed 17-case comparison but was slower. Read the [Russian functional specification and backend implementation plan](docs/VOICE_ROUTER_PLAN_RU.md) and [experiment record](docs/experiments/2026-09-23-luna-sol-routing.md).
 
 ## Main flow
 

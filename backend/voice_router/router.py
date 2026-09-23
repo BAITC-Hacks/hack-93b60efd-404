@@ -80,8 +80,13 @@ class OpenAIRouter:
             "otherwise preserve mention order. Use SYS_UNCLEAR when the request is "
             "genuinely ambiguous, SYS_OUT_OF_SCOPE for unsupported services, and "
             "SYS_GOODBYE only when ending the conversation. For a follow-up, use "
-            "history and active_scenario without dropping a new topic. Do not invent "
-            "IDs or imply an action was performed. Keep the reason short and cite "
+            "history and active_scenario without dropping a new topic. "
+            "Missing identifiers or slots do not make a clear intent ambiguous: "
+            "choose the scenario, then collect its required data downstream. "
+            "Do not create a second intent when a product feature, price factor, "
+            "or contract term is merely part of the first request; add another "
+            "scenario only for a genuinely independent customer task. "
+            "Do not invent IDs or imply an action was performed. Keep the reason short and cite "
             "specific words/meaning and a relevant boundary. Never invent numeric confidence."
             "\nCatalogue: " + self.catalogue_prompt
         )
