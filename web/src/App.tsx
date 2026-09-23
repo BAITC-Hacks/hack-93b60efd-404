@@ -156,14 +156,11 @@ export default function App() {
   const messages = store.active?.messages ?? [];
   const botMessages = useMemo(() => messages.filter((m) => m.role === 'assistant'), [messages]);
   const selected = botMessages.find((m) => m.id === selectedId) ?? botMessages[botMessages.length - 1] ?? null;
-  const selectedIdx = selected ? messages.indexOf(selected) : -1;
-  const selectedUser = selectedIdx > 0 ? [...messages.slice(0, selectedIdx)].reverse().find((m) => m.role === 'user') ?? null : null;
-  const turnNo = selected ? botMessages.indexOf(selected) + 1 : 0;
   const lastBot = botMessages[botMessages.length - 1];
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
 
-  const onReview = (r: Review | undefined) => {
-    if (store.activeId && selected) store.patch(store.activeId, selected.id, { review: r });
+  const onReview = (id: string, r: Review | undefined) => {
+    if (store.activeId) store.patch(store.activeId, id, { review: r });
   };
 
   useEffect(() => {
@@ -402,7 +399,13 @@ export default function App() {
           <>
             {!frame.framed && <div className="trace-scrim" onClick={() => setTraceOpen(false)} aria-hidden />}
             <div className="side" style={frame.framed ? { height: phoneH } : undefined}>
-              <TracePanel message={selected} userMessage={selectedUser} turnNo={turnNo} onClose={() => setTraceOpen(false)} onReview={onReview} />
+              <TracePanel
+                messages={messages}
+                selectedId={selected?.id ?? null}
+                onSelect={setSelectedId}
+                onClose={() => setTraceOpen(false)}
+                onReview={onReview}
+              />
             </div>
           </>
         )}

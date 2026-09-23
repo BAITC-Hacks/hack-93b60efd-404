@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 import type { Message } from '../state/types';
-import { ACTION_LABEL, LANG_SHORT, LOW_CONFIDENCE, pct } from '../lib/format';
-import { LatencyBar } from './LatencyBar';
-import { IconAlert, IconBolt, IconBranch, IconHeadset, IconMic, HalykMark } from './icons';
+import { RouteChip } from './RouteChip';
+import { IconAlert, IconHeadset, IconMic, HalykMark } from './icons';
 
 export const EXAMPLES = [
   { lang: 'RU', text: 'Здравствуйте, я вчера оплатил полис, деньги списались, а он не активировался… а, и ещё, адрес доставки поменять надо' },
@@ -81,7 +80,6 @@ function AssistantMessage({
   onConfirm?: (yes: boolean) => void;
 }) {
   const t = m.turn;
-  const low = t ? t.scenario.confidence < LOW_CONFIDENCE || t.action === 'clarify' : false;
 
   return (
     <div className={`msg msg--bot ${selected ? 'is-selected' : ''}`}>
@@ -121,17 +119,7 @@ function AssistantMessage({
               </div>
             )}
 
-            <button className="routechip" onClick={onSelect} aria-pressed={selected} title="Открыть трассировку">
-              <span className={`routechip__path routechip__path--${t.route_path}`}>
-                {t.route_path === 'fast' ? <IconBolt width={13} height={13} /> : <IconBranch width={13} height={13} />}
-                {t.route_path === 'fast' ? 'быстрый путь' : 'LLM'}
-              </span>
-              <span className="routechip__name">{t.scenario.name}</span>
-              <span className={`routechip__conf ${low ? 'is-low' : ''}`}>{pct(t.scenario.confidence)}</span>
-              {t.action !== 'answer' && <span className="routechip__action">{ACTION_LABEL[t.action]}</span>}
-              <span className="routechip__lang">{LANG_SHORT[t.lang]}</span>
-              <LatencyBar message={m} compact />
-            </button>
+            <RouteChip m={m} selected={selected} onClick={onSelect} title="Открыть трассировку" />
           </>
         )}
       </div>

@@ -153,7 +153,7 @@ export async function mockTurn(req: TurnRequest): Promise<TurnResponse> {
 
   const lastNeedsConfirm = SCENARIOS.find((s) => s.id === lastScenario)?.action === 'confirm';
 
-  if (!primary && (saidYes || saidNo) && lastScenario && (lastNeedsConfirm || !pending.length)) {
+  if (!primary && (saidYes || saidNo) && lastNeedsConfirm) {
     primary = SCENARIOS.find((s) => s.id === lastScenario);
     confidence = 0.82;
     reasoning = `Короткий ответ «${text}» относится к предыдущему вопросу робота в сценарии ${lastScenario}.`;
