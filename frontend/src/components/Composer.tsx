@@ -124,11 +124,11 @@ export function Composer(p: Props) {
               ref={taRef}
               rows={1}
               className="pill-input__field"
-              placeholder="Спросите робота"
+              placeholder="Спросите агента"
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={onKey}
-              aria-label="Сообщение роботу"
+              aria-label="Сообщение агенту"
             />
           )}
         </div>

@@ -70,7 +70,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
     return (
       <div className="sup sup--empty">
         <h1>Панель супервизора</h1>
-        <p>Статистика появится после первых разговоров: какие сценарии выбирал робот, где сомневался, где ошибся и уложился ли во время.</p>
+        <p>Статистика появится после первых разговоров: какие сценарии выбирал агент, где сомневался, где ошибся и уложился ли во время.</p>
       </div>
     );
   }
@@ -83,7 +83,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
         <div>
           <h1>Панель супервизора</h1>
           <p>
-            {plural(rows.length, 'ответ', 'ответа', 'ответов')} робота, {plural(conversations.length, 'разговор', 'разговора', 'разговоров')}. Данные хранятся в этом браузере.
+            {plural(rows.length, 'ответ', 'ответа', 'ответов')} агента, {plural(conversations.length, 'разговор', 'разговора', 'разговоров')}. Данные хранятся в этом браузере.
           </p>
         </div>
         <button className="btn" onClick={() => confirm('Удалить все разговоры и статистику?') && onClearAll()}>
@@ -106,7 +106,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
           tone={s.e2eP50 == null ? undefined : s.e2eP50 <= E2E_TARGET_MS ? 'ok' : 'warn'}
         />
         <Metric label="Быстрый путь" value={pct(s.fastShare)} sub={`медиана ${ms(s.fastP50)} против ${ms(s.llmP50)} у LLM`} />
-        <Metric label="Уточнения" value={String(s.clarify)} sub="робот переспросил вместо догадки" />
+        <Metric label="Уточнения" value={String(s.clarify)} sub="агент переспросил вместо догадки" />
         <Metric label="Передачи оператору" value={String(s.handoff)} sub="с транскриптом и параметрами" />
       </div>
 
@@ -139,7 +139,7 @@ export function Supervisor({ conversations, onOpen, onClearAll }: Props) {
         </section>
 
         <section className="card">
-          <h2>Где робот сомневался или ошибся</h2>
+          <h2>Где агент сомневался или ошибся</h2>
           {s.doubtful.length === 0 ? (
             <p className="muted">Пока всё уверенно. Отметьте ошибку в трассировке реплики, и она появится здесь.</p>
           ) : (

@@ -53,7 +53,7 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
 
         <div className="sidebar__label">История</div>
         <ul className="convlist">
-          {conversations.length === 0 && <li className="convlist__empty">Здесь появятся ваши разговоры с роботом.</li>}
+          {conversations.length === 0 && <li className="convlist__empty">Здесь появятся ваши разговоры с агентом.</li>}
           {conversations.map((c) => {
             const scen = lastScenario(c);
             return (
@@ -76,7 +76,7 @@ export function Sidebar({ conversations, activeId, view, open, onNew, onSelect, 
         </ul>
 
         <div className="settings">{settings}</div>
-        <div className="sidebar__foot">Данные синтетические. Робот не выполняет необратимых действий без подтверждения клиента.</div>
+        <div className="sidebar__foot">Данные синтетические. Агент не выполняет необратимых действий без подтверждения клиента.</div>
       </aside>
     </>
   );

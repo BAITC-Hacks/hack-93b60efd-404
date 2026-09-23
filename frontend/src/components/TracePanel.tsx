@@ -61,7 +61,7 @@ export function TracePanel({ messages, selectedId, onSelect, onClose, onReview }
 
       {!turns.length ? (
         <p className="trace__empty">
-          Скажите роботу первую фразу. Здесь появится сценарий, который он выбрал, почему он так решил и сколько занял каждый этап.
+          Скажите агенту первую фразу. Здесь появится сценарий, который он выбрал, почему он так решил и сколько занял каждый этап.
         </p>
       ) : (
         <div className="trace__body tfeed" ref={bodyRef}>
@@ -152,7 +152,7 @@ function TurnDetails({ m, onReview }: { m: Message; onReview: (r: Review | undef
             </>
           )}
         </div>
-        {low && <p className="note note--warn">Робот не уверен в выборе, поэтому переспрашивает клиента, а не угадывает.</p>}
+        {low && <p className="note note--warn">Агент не уверен в выборе, поэтому переспрашивает клиента, а не угадывает.</p>}
         {m.source === 'mock' && (
           <p className="note">Сервер недоступен, ответ дала заглушка по ключевым словам. Качество маршрутизации по ней не оценивайте.</p>
         )}

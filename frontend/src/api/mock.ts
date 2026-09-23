@@ -156,7 +156,7 @@ export async function mockTurn(req: TurnRequest): Promise<TurnResponse> {
   if (!primary && (saidYes || saidNo) && lastNeedsConfirm) {
     primary = SCENARIOS.find((s) => s.id === lastScenario);
     confidence = 0.82;
-    reasoning = `Короткий ответ «${text}» относится к предыдущему вопросу робота в сценарии ${lastScenario}.`;
+    reasoning = `Короткий ответ «${text}» относится к предыдущему вопросу агента в сценарии ${lastScenario}.`;
     reply = saidYes ? 'Готово, оформил. Что-нибудь ещё?' : 'Хорошо, ничего не меняю. Чем ещё помочь?';
   } else if (!primary && pending.length) {
     const next = pending.shift()!;
