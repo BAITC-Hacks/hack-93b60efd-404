@@ -96,13 +96,21 @@ h1, h2, h3 { margin: 0; }
 .statusbar__icons { display: inline-flex; align-items: center; gap: 6px; }
 
 .side {
-  position: relative; flex-shrink: 0; width: 400px; min-height: 0;
+  --side-w: 400px;
+  position: relative; flex-shrink: 0; width: var(--side-w); min-height: 0;
+  animation: side-in .32s cubic-bezier(.3, .7, .2, 1);
   display: flex; flex-direction: column;
   border-radius: 32px; overflow: hidden;
   background: var(--bg);
   box-shadow: 0 40px 90px -40px rgb(0 60 44 / .45);
 }
-.side--wide { width: min(640px, calc(100vw - 64px - 32px - 214px)); }
+.side--wide { --side-w: min(640px, calc(100vw - 64px - 32px - 214px)); }
+.side.is-closing { animation: side-out .22s cubic-bezier(.4, 0, .8, .4) forwards; pointer-events: none; }
+/* the negative margin cancels the panel's width and the row gap, so the phone glides instead of jumping */
+@keyframes side-in { from { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
+@keyframes side-out { to { margin-left: calc(-1 * var(--side-w) - 32px); opacity: 0; transform: translateX(28px); } }
+.is-framed .phone-slot { transition: width .32s cubic-bezier(.3, .7, .2, 1), height .32s cubic-bezier(.3, .7, .2, 1); }
+.is-framed .phone { transition: transform .32s cubic-bezier(.3, .7, .2, 1); }
 .side__scroll { overflow-y: auto; flex: 1; min-height: 0; }
 .side__close { position: absolute; top: 14px; right: 14px; z-index: 2; }
 .is-framed .side .trace { background: transparent; border-left: 0; flex: 1; }
@@ -503,7 +511,14 @@ h1, h2, h3 { margin: 0; }
   position: fixed; top: 0; right: 0; bottom: 0; width: min(var(--tr), 100vw);
   z-index: 30; border-left: 0; box-shadow: -16px 0 48px rgb(7 18 34 / .14);
 }
-.shell:not(.is-framed) .trace-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgb(7 18 34 / .22); }
+.shell:not(.is-framed) .trace-scrim { display: block; position: fixed; inset: 0; z-index: 25; background: rgb(7 18 34 / .22); animation: fade-in .24s ease-out; }
+.shell:not(.is-framed) .trace-scrim.is-closing { animation: fade-out .22s ease-in forwards; }
+.shell:not(.is-framed) .trace { animation: drawer-in .28s cubic-bezier(.3, .7, .2, 1); }
+.shell:not(.is-framed) .is-closing .trace { animation: drawer-out .22s cubic-bezier(.4, 0, .8, .4) forwards; }
+@keyframes drawer-in { from { transform: translateX(100%); } }
+@keyframes drawer-out { to { transform: translateX(100%); } }
+@keyframes fade-in { from { opacity: 0; } }
+@keyframes fade-out { to { opacity: 0; } }
 
 .shell:not(.is-framed) .topbar { padding-top: max(14px, env(safe-area-inset-top)); }
 .shell:not(.is-framed) .sidebar { padding-top: max(16px, env(safe-area-inset-top)); padding-bottom: max(14px, env(safe-area-inset-bottom)); }
@@ -513,8 +528,9 @@ h1, h2, h3 { margin: 0; }
   .shell:not(.is-framed) .trace {
     top: auto; left: 0; width: 100%; height: min(88dvh, calc(100% - 40px));
     border-radius: 24px 24px 0 0; box-shadow: 0 -16px 48px rgb(7 18 34 / .18);
-    animation: sheet-up .26s cubic-bezier(.3, .7, .2, 1);
+    animation: sheet-up .28s cubic-bezier(.3, .7, .2, 1);
   }
+  .shell:not(.is-framed) .is-closing .trace { animation: sheet-down .22s cubic-bezier(.4, 0, .8, .4) forwards; }
   .sheet-grip { display: block; width: 40px; height: 5px; border-radius: 3px; background: #d5d9e0; margin: 8px auto 0; flex-shrink: 0; }
   .shell:not(.is-framed) .trace__head { padding-top: 6px; }
   .shell:not(.is-framed) .trace__body { padding-bottom: max(24px, env(safe-area-inset-bottom)); }
@@ -522,6 +538,7 @@ h1, h2, h3 { margin: 0; }
   .pill-input__field, .field input { font-size: 16px; }
 }
 @keyframes sheet-up { from { transform: translateY(100%); } }
+@keyframes sheet-down { to { transform: translateY(100%); } }
 
 @media (max-height: 520px) {
   .orb { width: min(clamp(150px, 50cqi, 230px), 38dvh); }

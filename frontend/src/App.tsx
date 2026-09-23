@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { fetchHealth, sendTurn, type Source } from './api/client';
 import type { Health, InputChannel, LangHint } from './api/types';
 import { EXAMPLES, EmptyState, MessageList } from './components/Chat';
@@ -191,7 +191,18 @@ export default function App() {
 
   const supervisorOpen = view === 'supervisor';
   const showTrace = traceOpen && !supervisorOpen;
-  const panelWidth = showTrace ? 400 : supervisorOpen ? 640 : 0;
+  const [traceLeaving, setTraceLeaving] = useState(false);
+  const traceWasShown = useRef(showTrace);
+  useLayoutEffect(() => {
+    const was = traceWasShown.current;
+    traceWasShown.current = showTrace;
+    if (!was || showTrace || supervisorOpen) return setTraceLeaving(false);
+    setTraceLeaving(true);
+    const t = setTimeout(() => setTraceLeaving(false), 220);
+    return () => clearTimeout(t);
+  }, [showTrace, supervisorOpen]);
+  const traceMounted = showTrace || traceLeaving;
+  const panelWidth = traceMounted ? 400 : supervisorOpen ? 640 : 0;
   const frame = usePhoneFrame(panelWidth);
   const phoneView = frame.framed ? 'chat' : view;
   const phoneH = PHONE_H * frame.scale;
@@ -388,10 +399,10 @@ export default function App() {
           </div>
         </div>
 
-        {showTrace && (
+        {traceMounted && (
           <>
-            {!frame.framed && <div className="trace-scrim" onClick={() => setTraceOpen(false)} aria-hidden />}
-            <div className="side" style={frame.framed ? { height: phoneH } : undefined}>
+            {!frame.framed && <div className={`trace-scrim ${showTrace ? '' : 'is-closing'}`} onClick={() => setTraceOpen(false)} aria-hidden />}
+            <div className={`side ${showTrace ? '' : 'is-closing'}`} style={frame.framed ? { height: phoneH } : undefined}>
               <TracePanel
                 messages={messages}
                 selectedId={selected?.id ?? null}
